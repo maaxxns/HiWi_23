@@ -133,7 +133,7 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
   can be defined.
   After plugging in the definitions of $E_\text{t}(\omega)$ and $E_\text{ref}(\omega)$, $H_0(\omega)$ yields
   \begin{equation}
-    H_0 (\omega) = \frac{4 n_s(\omega)}{(n_s(\omega) +1)^2} \symup{exp}\left[-\kappa(\omega) \frac{\omega l }{c}\right] \symup{exp}\left[-i (n_s (\omega) - 1) \frac{\omega l}{c}\right]
+    H_0 (\omega) = \frac{4 n_s(\omega)}{(n_s(\omega) +1)^2} \symup{exp}\left[-\kappa(\omega) \frac{\omega l }{c}\right] \symup{exp}\left[-i (n (\omega) - 1) \frac{\omega l}{c}\right]
   \end{equation}
   \end{frame}
 
@@ -169,6 +169,58 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
   can be calculated.
   Note that a special unwrapping process is necessary to determine $\Phi(H(\omega))$, in python \textit{numpy.unwrap()} can be used to do this.
 \end{frame}
+
+\begin{frame}{Example data}
+  By using the discussed methods a reference dataset is analyzed.
+  The measured data is plotted below 
+  \begin{center}
+    \begin{collumns}
+      \begin{collumn}{0.5\textwidth}
+        \begin{figure}
+          \includegraphics[width=0.8\textwidth]{images/THz1.pdf}
+          \caption{Some transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
+        \end{figure}
+      \end{collumn}
+      \begin{collumn}{0.5\tectwidth}
+        \begin{figure}
+          \includegraphics[width=0.8\textwidth]{images/THz4_1.pdf}
+          \caption{The FFT of the transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
+        \end{figure}
+      \end{collumn}
+    \end{collumns}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Refractive index}
+  The refractive index is then determined by the Quotient of Transmission and reference data in frequency space.
+  The result can be seen below:
+  \begin{center}
+    \begin{figure}
+      \includegraphics[width=0.8\textwidth]{images/THz5_1.pdf}
+      \caption{The refractive index of Teflon as calculated by the equation shown above.}
+    \end{figure}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Fabry-Perot factor}
+  Now lets take a look at the reflections inside the probe.
+  Similar to the transmitted wave, we can express the reflected wave as 
+  \begin{align*}
+    E_\text{r}(\omega) =& \rho E_0(\omega) + \tau \tau' \rho' \symup(exp) \left[ -2 i n_s(\omega) \frac{\omega l }{c}\right]\\
+                        & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -4 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
+                       =& rho E_0(\omega) + \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
+  \end{align*}
+  where $\rho$ is the complex reflection coeffiecient 
+  \begin{equation}
+    \rho = \frac{1 - n_s}{1 + n_s}
+  \end{equation}
+  and $FP(\omega)$ is the Fabry-Perot Factor, which can be expressed as 
+  \begin{equation}
+    FP(\omega) = \left[1 - \rho'^2 \cdot \symup(exp)\left(- 2 i n_s(\omega )\frac{\omega l }{c}\right)\right]^{-1}
+  \end{equation}
+\end{frame}
+
+
 \section{conclusion}
 \begin{frame}{Refractive index}
   The refractive index can now be calculated by the formula defined in the beginning
