@@ -102,7 +102,7 @@ plt.close()
 
 
 
-n = 1 - c/(freq_ref* d) *phase
+n = abs(1 - c/(freq_ref* d) *phase)
 #n_im = c/(freq_ref *d) *(np.log((4*n)/(n+1)**2)) - np.log(np.abs(phase))
 
 plt.figure()
@@ -113,7 +113,7 @@ plt.plot(freq_ref*10**(-12), n, label='real part of refractive index')
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 1)
-#plt.ylim(-0.5,1.5)
+plt.ylim(-0.5,1.5)
 plt.legend()
 plt.grid()
 plt.title('The real part of the refractive index')
