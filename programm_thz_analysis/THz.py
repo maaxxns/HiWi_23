@@ -7,9 +7,37 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.constants import c
 
+###################################################################################################################################
+# Functions
+
+def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to return transfer function
+    return (data_sam/data_ref)
+
+def n(freq, d, phase): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved phase and returns the real refractive index
+    return (1 - c/(freq* d) *phase)
+
+def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved H_0 and returns the complex refractive index
+    n_real = n
+    ln_a = np.log((4*n_real)/(n_real + 1)**2)
+    ln_b = np.log(np.abs(H_0))
+    n_im = c/(freq *d) *(ln_a - ln_b)
+    return n_im
+
+
+def FFT_func(I, t): # FFT
+    N = len(t) #number of total data points
+    timestep = np.abs(t[2]-t[3]) # the time between each data point
+    FX = fft(I)[:N//2] #the fourier transform of the intensity. 
+    FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
+    return [FDelay[10:], FX[10:]] # cut of the noise frequency
+
+###################################################################################################################################
+
 #Read the excel file
-data_ref = np.genfromtxt('data/without_cryo_with_purge.txt', delimiter="	", comments="#")
-data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon_2.txt',  delimiter="	", comments="#")
+data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#")
+data_ref = np.genfromtxt('data/without_cryo_with_purge_teflon_2.txt',  delimiter="	", comments="#")
+
+
 data_ref[:,0] = data_ref[:,0] * 10**(-12) # ps in seconds
 data_sam[:,0] = data_sam[:,0] * 10**(-12)
 
@@ -30,15 +58,39 @@ plt.close()
 
 #########################################################################################
 
-def FFT_func(I, t): # FFT
-    N = len(t) #number of total data points
-    timestep = np.abs(t[2]-t[3]) # the time between each data point
-    FX = fft(I)[:N//2] #the fourier transform of the intensity. 
-    FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
-    return [FDelay[10:], FX[10:]] # cut of the noise frequency
-
 freq_ref, amp_ref = FFT_func(data_ref[:,1], data_ref[:,0])  #in Hz
 freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
+
+mask1 = freq_ref < 4.5*10**12 # mask1ed for THz frequency below 4.5 THz
+amp_ref = amp_ref[mask1]
+amp_sam = amp_sam[mask1]
+freq_ref = freq_ref[mask1]
+freq_sam = freq_sam[mask1]
+
+##########################################################################################
+# read in data that is already in frequency domain
+
+data_in_freq_domain = np.genfromtxt('data/teflon_1/teflon_1_frequency_domain.txt', delimiter="	", comments="#")[10:] 
+# first row is freq, second sample amplitude, fourth reffernce 
+
+
+material_properties_ref = np.genfromtxt('data/teflon_1/teflon_1_material_properties.txt', delimiter="	", comments="#")[10:]
+
+mask2 = data_in_freq_domain[:,0] < 4.5
+data_in_freq_domain = data_in_freq_domain[mask2]
+
+plt.figure()
+plt.plot(data_in_freq_domain[:,0], data_in_freq_domain[:,1], label='Sample FFT') # plot in Thz
+plt.plot(data_in_freq_domain[:,0], data_in_freq_domain[:,3], label='Reference FFT') # plot in Thz
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel('Spectral Amplitude')
+plt.legend()
+plt.grid()
+plt.title('The FFT of the data sets')
+plt.savefig('build/THz4_2.pdf')
+plt.close()
+
+##########################################################################################
 
 plt.figure()
 plt.plot(freq_ref* 10**(-12), np.abs(amp_ref), label='Reference FFT') # plot in Thz
@@ -53,18 +105,13 @@ plt.close()
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-freq_ref = freq_ref[1:] # we need to have same shapes
-#somewhere here is the problem
+freq_ref = freq_ref # we need to have same shapes
 
-H_0 = amp_sam/amp_ref # complex transfer function
+H_0_value = H_0(amp_ref, amp_sam) # complex transfer function
 
-angle = np.angle(H_0[1:]) #angle between complex numbers
+angle = np.angle(H_0_value) #angle between complex numbers
 phase = (np.unwrap(angle,period=2*np.pi))  #phase 
 
-
-###########
-
-d = 0.25*10**(-3) #millimeter
 
 plt.figure()
 plt.plot(freq_ref*10**(-12),angle, label='angle')
@@ -79,23 +126,21 @@ plt.savefig('build/THzPhase.pdf')
 plt.close()
 
 
-n = (1 - c/(freq_ref* d) *phase)
-
-ln_a = np.log((4*n)/(n+1)**2)
-ln_b = np.log(np.abs(phase))
-
-n_im = c/(freq_ref *d) *(ln_a - ln_b)
+d = 0.26*10**(-3) #millimeter
+n_real = n(freq_ref, d, phase)
+n_im = k(freq_ref, d, H_0_value, n_real)
 
 
 plt.figure()
 #plt.plot(freq_ref*10**(-12),phase, label='phase')
-plt.plot(freq_ref*10**(-12),n_im, label='imagenary part of refractive index')
-plt.plot(freq_ref*10**(-12), n, label='real part of refractive index')
+plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], label='refference n from steffens program')
+#plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], label='refference k from steffens program')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 4.5)
-plt.ylim(-1,10)
+plt.ylim(0,2)
 plt.legend()
 plt.grid()
 plt.title('The real part of the refractive index')
@@ -104,18 +149,32 @@ plt.close()
 
 
 ##################################################################################################
-""""
+
+plt.figure()
+plt.plot(freq_ref*10**(-12), n_im, label='complex part of refractive index')
+#plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], label='refference n from steffens program')
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel('k (arb.)')
+plt.xlim(0.18, 4.5)
+#plt.ylim(0,2000)
+plt.legend()
+plt.grid()
+plt.title('The complex part of the refractive index')
+plt.savefig('build/THz5_2.pdf')
+plt.close()
+
 alpha = 2*freq_ref *n_im/c 
 
 plt.figure()
-plt.plot(freq_ref*10**(-12), alpha, label='Absorption coefficient')
+plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], label='refference n from steffens program')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel(r'$\alpha$')
-plt.xlim(0.18, 1)
+plt.xlim(0.18, 4.5)
+plt.ylim(0, 500)
 plt.legend()
 plt.grid()
 plt.title('The absorption coeffiecient')
 plt.savefig('build/THz6.pdf')
 plt.close()
-"""
