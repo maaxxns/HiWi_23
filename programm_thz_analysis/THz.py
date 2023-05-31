@@ -44,9 +44,19 @@ data_sam[:,0] = data_sam[:,0] * 10**(-12)
 data_ref[:,0] = data_ref[:,0] + np.abs(np.min(data_ref[:,0])) # move everything to positiv times
 data_sam[:,0] = data_sam[:,0] + np.abs(np.min(data_sam[:,0]))
 
+peaks_inref,_ = find_peaks(data_ref[:,1], prominence = 0.3) # height=np.max(data_ref[:,1])
+peaks_insam,_ = find_peaks(data_sam[:,1], prominence = 0.3)
+
+cap_index_ref = abs(peaks_inref[0] - peaks_inref[-1])//2 + peaks_inref[0]
+cap_index_sam = abs(peaks_insam[0] - peaks_insam[-1])//2 + peaks_insam[0]
+
+#data_ref = data_ref[:cap_index_ref]
+#data_sam = data_sam[:cap_index_sam]
+
 #plot the intensity against time delay
 plt.figure()
 plt.plot(data_ref[:,0]*10**(12), data_ref[:,1], label='Reference')
+#plt.vlines(data_ref[peaks_inref,0]*10**12, ymin=0, ymax=-10)
 plt.plot(data_sam[:,0]*10**(12) + 100, data_sam[:,1], label='Sample moved by +100ps')
 plt.xlabel(r'$ t/ps $')
 plt.ylabel('Amplitude')
@@ -92,7 +102,7 @@ freq_ref = freq_ref # we need to have same shapes
 H_0_value = H_0(amp_ref, amp_sam) # complex transfer function
 
 angle = np.angle(H_0_value) #angle between complex numbers
-phase = (np.unwrap(angle,period=2*np.pi))  #phase 
+phase = (np.unwrap(angle))  #phase 
 
 
 plt.figure()
