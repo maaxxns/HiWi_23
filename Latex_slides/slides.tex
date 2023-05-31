@@ -193,6 +193,9 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
 
 \begin{frame}{Refractive index}
   The refractive index is then determined by the Quotient of Transmission and reference data in frequency space.
+  \begin{equation}
+    n(\omega) = 1 - \frac{c}{\omega l} \Phi(H(\omega))
+  \end{equation}
   The result can be seen below:
   \begin{center}
     \begin{figure}
@@ -202,13 +205,45 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
   \end{center}
 \end{frame}
 
+\begin{frame}{Absorption coeffiecient}
+  The absorption coeffiecient is then determined by
+  \begin{equation}
+    \alpha(\omega) = \frac{2 \omega \kappa(\omega)}{c}
+  \end{equation}
+  where $\kappa$ is the complex refractive index, which is determined by 
+  \begin{equation}
+    \kappa(\omega) = \frac{c}{\omega l } \left( \symup{ln}\left[ \frac{4 n(\omega)}{(n(\omega) + 1)^2}\right] - \symup{ln}|H(\omega)|\right)
+  \end{equation}
+  The result can be seen below:
+  \begin{center}
+    \begin{figure}
+      \includegraphics[width=0.4\textwidth]{images/THz6.pdf}
+      \caption{The absorption coeffiecient of Teflon as calculated by the equation shown above.}
+    \end{figure}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Phase}
+  Just as a reference we can also plot the phase information that we derive from the time resolved measurment.
+  The result can be seen below:
+  \begin{center}
+    \begin{figure}
+      \includegraphics[width=0.5\textwidth]{images/THzPhase.pdf}
+      \caption{The Phase of Teflon as calculated by the equation shown above.}
+    \end{figure}
+  \end{center}
+  As you can see in this Example the Phase and angle of the Transferfunction $H_0$ align.
+  This is because the angle does not extend over $2\pi$.
+\end{frame}
+
+
 \begin{frame}{Fabry-Perot factor}
   Now lets take a look at the reflections inside the probe.
   Similar to the transmitted wave, we can express the reflected wave as 
   \begin{align*}
     E_\text{r}(\omega) =& \rho E_0(\omega) + \tau \tau' \rho' \symup(exp) \left[ -2 i n_s(\omega) \frac{\omega l }{c}\right]\\
                         & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -4 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
-                       =& rho E_0(\omega) + \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
+                       =& \rho E_0(\omega) + \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
   \end{align*}
   where $\rho$ is the complex reflection coeffiecient 
   \begin{equation}
