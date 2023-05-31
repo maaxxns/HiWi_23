@@ -68,27 +68,9 @@ freq_ref = freq_ref[mask1]
 freq_sam = freq_sam[mask1]
 
 ##########################################################################################
-# read in data that is already in frequency domain
-
-data_in_freq_domain = np.genfromtxt('data/teflon_1/teflon_1_frequency_domain.txt', delimiter="	", comments="#")[10:] 
-# first row is freq, second sample amplitude, fourth reffernce 
-
+# read in data that is used for refference
 
 material_properties_ref = np.genfromtxt('data/teflon_1/teflon_1_material_properties.txt', delimiter="	", comments="#")[10:]
-
-mask2 = data_in_freq_domain[:,0] < 4.5
-data_in_freq_domain = data_in_freq_domain[mask2]
-
-plt.figure()
-plt.plot(data_in_freq_domain[:,0], data_in_freq_domain[:,1], label='Sample FFT') # plot in Thz
-plt.plot(data_in_freq_domain[:,0], data_in_freq_domain[:,3], label='Reference FFT') # plot in Thz
-plt.xlabel(r'$ \omega/THz $')
-plt.ylabel('Spectral Amplitude')
-plt.legend()
-plt.grid()
-plt.title('The FFT of the data sets')
-plt.savefig('build/THz4_2.pdf')
-plt.close()
 
 ##########################################################################################
 
