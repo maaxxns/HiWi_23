@@ -61,7 +61,7 @@ The First goal is to determine the refractive index
 \begin{equation}
   n_s = n - i\kappa
 \end{equation}
-which contains the real part $n$ nad complex part $\kappa$ of the refractive index.
+which contains the real part $n$ and complex part $\kappa$ of the refractive index.
 \end{frame}
 
 \section{Scheme}
@@ -239,15 +239,31 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
 
 \begin{frame}{Fabry-Perot factor}
   Now lets take a look at the reflections inside the probe.
-  Similar to the transmitted wave, we can express the reflected wave as 
-  \begin{align*}
-    E_\text{r}(\omega) =& \rho E_0(\omega) + \tau \tau' \rho' \symup(exp) \left[ -2 i n_s(\omega) \frac{\omega l }{c}\right]\\
-                        & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -4 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
-                       =& \rho E_0(\omega) + \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
-  \end{align*}
-  where $\rho$ is the complex reflection coeffiecient 
+  The fresnel equations tell us that for every additional path that the wave takes inside the medium we have to multiply it by 
   \begin{equation}
-    \rho = \frac{1 - n_s}{1 + n_s}
+    \rho'^2 = \left(\frac{1 - n_s}{1 + n_s}\right)^2
+  \end{equation}
+  aswell as a phase shift factor 
+  \begin{equation}
+    \Phi = \symup{exp}\left[-k \cdot i n_s \frac{\omega l}{c}\right]
+  \end{equation}
+  where $k$ is the number transmissions inside the probe.
+  \begin{figure}
+    \includegraphics[width=0.4\textwidth]{images/Perot.pdf}
+    \caption{Through reflections inside the medium the transmitted wave $E_\text{t}(\omega)$ will consist of several phase shifted reflections.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  If we consider all the reflections inside the probe the transmitted wave will look like
+  \begin{align*}
+    E_\text{t}(\omega) \,=\,& \tau \tau' \symup{exp} \left[-i n_s(\omega) \frac{\omega l }{c}\right] \\
+                        & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -3 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -5 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
+                        \,=\,& \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
+  \end{align*}
+  where $\rho'$ is the complex reflection coeffiecient of the probe
+  \begin{equation}
+    \rho' = \frac{1 - n_s}{1 + n_s}
   \end{equation}
   and $FP(\omega)$ is the Fabry-Perot Factor, which can be expressed as 
   \begin{equation}
@@ -255,6 +271,30 @@ which contains the real part $n$ nad complex part $\kappa$ of the refractive ind
   \end{equation}
 \end{frame}
 
+\begin{frame}{2D-Materials}
+  The last "challenge" is to estimate the refractive index of very thin materials.
+  Spectroscopy setups are usually achieved by using a substrate on which the 2D-material will be applied.
+  The result is a signal from the substrate and a very weak signal from the 2D-material.
+  \begin{figure}
+    \includegraphics[width=0.5\textwidth]{images/2d.pdf}
+    \caption{The Probe is applied onto a substrate that also alters the intial THz-wave.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  For this we have to consider the transmission coeffiecients $t(\omega)$ of both mediums.
+  Aswell as reflections inside the medium.
+  We can write the transmitted THz-wave as
+  \begin{equation}
+    E_\text{t} '(\omega) = \eta t_\text{Probe}(\omega) t_\text{Sub}(\omega)FP(\omega)E_0(\omega)
+  \end{equation}
+  where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
+  The complex transfer function $H_0'$ can then be writen as 
+  \begin{equation}
+    H_0(\omega) = \frac{3 n_s \cdot n_\text{sub}}{(1 + n_s)(n_s + n_\text{sub})} \symup{exp}\left[-i (n_s - 1)\frac{\omega l}{c}\right]FP(\omega)
+  \end{equation}
+  \textcolor{red}{hier bin ich nicht ganz sicher mit den faktoren}
+\end{frame}
 
 \section{conclusion}
 \begin{frame}{Refractive index}
