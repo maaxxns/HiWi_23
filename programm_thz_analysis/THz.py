@@ -263,7 +263,7 @@ n_im = k(freq_ref, d, H_0_value, n_real)
 #   This block calculates the real and complex part of the refractive index
 ###################################################################################################################################
 
-n_real_zero = n(freq_ref_zero, d, phase_zero)*2
+n_real_zero = n(freq_ref_zero, d, phase_zero)
 #n_real_alt = n(freq_ref, d, phase_dif)
 n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
 
