@@ -8,6 +8,7 @@ from scipy.constants import c
 from scipy.optimize import curve_fit
 ###################################################################################################################################
 # Functions
+
 def lin(A, B, x):
     return A*x+B
 
@@ -15,7 +16,7 @@ def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to
     return (data_sam/data_ref)
 
 def n(freq, d, phase): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved phase and returns the real refractive index
-    return (1 - c/(freq* d) *phase) #    return (1 - c/(freq* d) *phase)
+    return (1 - c/(freq* d) * phase) #    return (1 - c/(freq* d) *phase)
 
 
 def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved H_0 and returns the complex refractive index
@@ -44,7 +45,7 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
     phase_offset = freq_ref * (t_peak_sam - t_peak_ref)
     return phase_dif_0 - phase_ref_0 + phase_sam_0 + phase_offset
 
-
+ 
 
 ###################################################################################################################################
 #       All data is read in, in this block.
@@ -56,18 +57,18 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
 
 # The thickness of the probe
 
-d = 0.52*10**(-3) # thickness of the probe in SI
+d = 0.380*10**(-3) # thickness of the probe in SI
 
 #Read the excel file
 
-data_sam = np.genfromtxt('data/SI_measurement/SI_purge.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('data/SI_measurement/SI_reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+data_sam = np.genfromtxt('data/15_06_THz_measurment/Si_wafer.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/15_06_THz_measurment/empty.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 
 ###################################################################################################################################
 # This block plots the raw dataset
 ###################################################################################################################################
-
+ones = np.ones(10000)
 
 data_ref[:,0] = data_ref[:,0] * 10**(-12) # ps in seconds
 data_sam[:,0] = data_sam[:,0] * 10**(-12)
@@ -143,15 +144,15 @@ plt.close()
 H_0_value = H_0(amp_ref, amp_sam) # complex transfer function
 
 angle = np.angle(H_0_value) #angle between complex numbers
-phase = (np.unwrap(angle))  #phase 
+phase = np.unwrap(angle)  #phase 
 
 
-phase_dif = unwrapping_alt(amp_ref, amp_sam, freq_ref)
+#phase_dif = unwrapping_alt(amp_ref, amp_sam, freq_ref)
 
 # Note that phase and phase_dif should be equal. However, there are not. So either the paper is wrong. Or I am doing something wrong
 
 plt.figure()
-plt.plot(freq_ref*10**(-12),phase_dif, label='phase differenz')
+#plt.plot(freq_ref*10**(-12),phase_dif, label='phase differenz')
 plt.plot(freq_ref*10**(-12),phase, label='phase directly from H_0')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
@@ -167,7 +168,7 @@ plt.close()
 ###################################################################################################################################
 
 n_real = n(freq_ref, d, phase)
-n_real_alt = n(freq_ref, d, phase_dif)
+#n_real_alt = n(freq_ref, d, phase_dif)
 n_im = k(freq_ref, d, H_0_value, n_real)
 
 ###################################################################################################################################
@@ -175,7 +176,7 @@ n_im = k(freq_ref, d, H_0_value, n_real)
 ###################################################################################################################################
 
 plt.figure()
-plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
+#plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
 plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
@@ -192,7 +193,7 @@ plt.close()
 ###################################################################################################################################
 
 plt.figure()
-plt.plot(freq_ref*10**(-12), k(freq_ref, d, H_0_value, n_real_alt), label='complex part of refractive index by alt')
+#plt.plot(freq_ref*10**(-12), k(freq_ref, d, H_0_value, n_real_alt), label='complex part of refractive index by alt')
 plt.plot(freq_ref*10**(-12), n_im, label='complex part of refractive index')
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('k (arb.)')
