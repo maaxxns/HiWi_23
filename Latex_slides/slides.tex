@@ -62,6 +62,19 @@ The First goal is to determine the refractive index
   n_s = n - i\kappa
 \end{equation}
 which contains the real part $n$ and complex part $\kappa$ of the refractive index.
+The determine the dielectric function 
+\begin{equation}
+  \epsilon = \epsilon_1 + \epsilon_2
+\end{equation}
+of which
+\begin{equation}
+  \epsilon_1 = n^2 - \kappa^2
+\end{equation}
+and 
+\begin{equation}
+  \epsilon_2  = 2n\kappa 
+\end{equation}
+if the material is nonmagnetic.
 \end{frame}
 
 \section{Scheme}
@@ -291,21 +304,19 @@ which contains the real part $n$ and complex part $\kappa$ of the refractive ind
   where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
   The complex transfer function $H_0'$ can then be writen as 
   \begin{equation}
-    H_0(\omega) = \frac{3 n_s \cdot n_\text{sub}}{(1 + n_s)(n_s + n_\text{sub})} \symup{exp}\left[-i (n_s - 1)\frac{\omega l}{c}\right]FP(\omega)
+    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
   \end{equation}
-  \textcolor{red}{hier bin ich nicht ganz sicher mit den faktoren}
 \end{frame}
 
 \section{conclusion}
 \begin{frame}{Refractive index}
-  The refractive index can now be calculated by the formula defined in the beginning
-  \begin{equation}
-    n_s(\omega) = n - i \kappa \, .
-  \end{equation}
-  \newline
-  \textcolor{tugreen}{conclusion:} This scheme gives an easy way to determine the refractive index of thick homogenous probes through time resolved THz-Spectroscopy.
+  \begin{center}
+  \textcolor{tugreen}{conclusion:}
+  This scheme gives an easy way to determine the refractive index of thick homogenous probes through time resolved THz-Spectroscopy.
   It can be extended to also take reflections inside the probe into account by using the Fabry-Perot factor in the transmitted wave.
-  However, for most experimental setups this wont be necessary as the post-pulse is sufficiently delayed.
-
+  However, for most experimental setups this wont be necessary as the post-pulse is sufficiently delayed.\\
+  \textcolor{tugreen}{conclusion:}
+  Numerical Processes can be used to make the scheme even more accurate and take refelections into account aswell.
+\end{center}
 \end{frame}
 \end{document} 
