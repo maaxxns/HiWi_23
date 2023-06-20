@@ -7,10 +7,10 @@ texoptions = \
 	     --output-directory=build
 
 build/slides.pdf: FORCE | build
-	latexmk $(texoptions) slides.tex
+	latexmk $(texoptions) slides_presentation.tex
 
 preview: FORCE | build
-	latexmk $(texoptions) -pvc slides.tex
+	latexmk $(texoptions) -pvc slides_presentation.tex
 
 FORCE:
 
