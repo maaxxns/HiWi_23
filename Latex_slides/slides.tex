@@ -57,12 +57,12 @@
 
 \section{Goal}
 \begin{frame}
-The First goal is to determine the refractive index 
+Goal: determine the refractive index 
 \begin{equation}
   n_s = n - i\kappa
 \end{equation}
-which contains the real part $n$ and complex part $\kappa$ of the refractive index.
-The determine the dielectric function 
+with real part $n$ and complex part $\kappa$ of the refractive index.
+Then determine the dielectric function 
 \begin{equation}
   \epsilon = \epsilon_1 + \epsilon_2
 \end{equation}
@@ -83,10 +83,10 @@ if the material is nonmagnetic.
   \begin{center}
   \includegraphics[width=0.5\textwidth]{images/Transmission.pdf}
   \end{center}
-  The incoming THz-pulse $E_0(\omega)$ gets diffracted two times, indicated by the arrows, before it leaves the probe as the transmitted wave $E_\text{t}(\omega)$.
-  For simplicity sake it is easier to assume an incident angel of $\theta=\SI{0}{\degree}$.
+  The incoming THz-pulse $E_0(\omega)$ gets diffracted two times, and is transmitted as wave $E_\text{t}(\omega)$.
+  We assume an incident angel of $\theta=\SI{0}{\degree}$.
   All reflections are neglected.
-  As defined earlier the probe has the refractive index $n_s$, its length is set to be $l$.
+  The refractive index of the probe is $n_s$, its length is set to be $l$.
   The refractive index of the surrounding medium is $\eta$ in case of air $\eta\approx 1$.
 \end{frame}
 
@@ -100,7 +100,6 @@ if the material is nonmagnetic.
     t(\omega) = \tau \tau' \symup{exp}\left[- i n_s(\omega) \frac{\omega l }{c}\right]
   \end{equation}
   is the transmission coeffiecient.
-  The transmission coeffiecient is derived from the fresnel equations.
   Basically the wave is defracted two times, once when entering the medium and one when leaving the medium hence $\tau$ and $\tau'$.
   The defraction also generates a phase difference, which is represented by the exponential function.
   The complex transmission coeffiecients 
@@ -319,4 +318,81 @@ if the material is nonmagnetic.
   Numerical Processes can be used to make the scheme even more accurate and take refelections into account aswell.
 \end{center}
 \end{frame}
+
+
+\begin{frame}
+  \begin{center}
+    \begin{columns}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_timedomain.pdf}
+        \caption{Time domain data of silicon}
+      \end{column}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_timedomain_zero.pdf}
+        \caption{Zero padded time domain data of silicon}
+      \end{column}
+    \end{columns}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \begin{columns}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_FFT.pdf}
+        \caption{FFT of the time domain data of silicon}
+      \end{column}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_FFT_zero.pdf}
+        \caption{FFT of the zero padded time domain data of silicon}
+      \end{column}
+    \end{columns}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \begin{columns}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_real_index.pdf}
+        \caption{Real part of the refractive index of silicon}
+      \end{column}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_real_index_zero.pdf}
+        \caption{Real part of the refractive index of silicion with zero padding}
+      \end{column}
+    \end{columns}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \begin{columns}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_complex_index.pdf}
+        \caption{The complex part of the refractive index of silicon}
+      \end{column}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_complex_index_zero.pdf}
+        \caption{The real part of the refractive index of silicon with zero padding}
+      \end{column}
+    \end{columns}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \begin{columns}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_absorption.pdf}
+        \caption{The absorption coeffiecient of silcion}
+      \end{column}
+      \begin{column}
+        \includegraphics[width=\textwidth]{silicon/THz_absorption_zero.pdf}
+        \caption{The absorption coeffiecient of silicion with zero padding}
+      \end{column}
+    \end{columns}
+  \end{center}
+\end{frame}
+
 \end{document} 
