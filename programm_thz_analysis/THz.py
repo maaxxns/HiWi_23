@@ -43,7 +43,44 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
     phase_offset = freq_ref * (t_peak_sam - t_peak_ref)
     return phase_dif_0 - phase_ref_0 + phase_sam_0 + phase_offset
 
- 
+def error_function(H_0, H_0_measured): # The error function needs to be minimized to find the values for n and k
+    # a good explanation can be found  "A Reliable Method for Extraction of Material
+    # Parameters in Terahertz Time-Domain Spectroscopy"
+    delta_rho = np.ln(abs(H_0)) - np.ln(abs(H_0_measured))
+    angle_0 = np.angle(H_0) #angle between complex numbers
+    phase_0 = np.unwrap(angle_0)  #phase 
+    angle_mes = np.angle(H_0_measured)
+    phase_mes = np.unwrap(angle_mes)
+    delta_phi = phase_0 - phase_mes
+    return delta_phi**2 + delta_rho**2 # this should become zero in the process
+
+def paraboilid(r, A, b, c): # do I need this function?
+    return (1/2 * r * A * r - b * r + c)
+
+def hessian(x):
+    """
+    Calculate the hessian matrix with finite differences
+    Parameters:
+       - x : ndarray
+    Returns:
+       an array of shape (x.dim, x.ndim) + x.shape
+       where the array[i, j, ...] corresponds to the second derivative x_ij
+    """
+    x_grad = np.gradient(x) 
+    hessian = np.empty((x.ndim, x.ndim) + x.shape, dtype=x.dtype) 
+    for k, grad_k in enumerate(x_grad):
+        # iterate over dimensions
+        # apply gradient again to every component of the first derivative.
+        tmp_grad = np.gradient(grad_k) 
+        for l, grad_kl in enumerate(tmp_grad):
+            hessian[k, l, :, :] = grad_kl
+    return hessian
+
+def r_p(r_p, H_0, H_0_measured):
+    for i in range(10):
+        A = hessian(error_function(H_0, H_0_measured))
+        r_p_1 = r_p - np.linalg.inv(A) * np.grad(r_p)
+        r_p = r_p_1
 
 ###################################################################################################################################
 #       All data is read in, in this block.
@@ -55,12 +92,12 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
 
 # The thickness of the probe
 
-d = 0.380*10**(-3) # thickness of the probe in SI
+d = 26*10**(-3) # thickness of the probe in SI
 
 #Read the excel file
-
-data_sam = np.genfromtxt('data/15_06_THz_measurment/Si_wafer.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('data/15_06_THz_measurment/empty.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+material_properties_ref = np.genfromtxt('data/teflon_1_material_properties.txt')
+data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/without_cryo_with_purge.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 
 ###################################################################################################################################
@@ -98,7 +135,7 @@ num_zeros = 1500
 
 peak_ref,prop = find_peaks(data_ref[:,1], prominence=0.3) # finds the highest peak in the dataset and returns its index
 peak_ref = peak_ref[0:2]
-peak_sam,prop = find_peaks(data_sam[:,1], prominence=1)
+peak_sam,prop = find_peaks(data_sam[:,1], prominence=0.5)
 peak_sam = peak_sam[0:2]
 peak_sam[1] = peak_sam[1] - 100 # we assume that we cut off the array 50 steps before we hit the post pulse
 
@@ -214,7 +251,7 @@ phase = np.unwrap(angle)  #phase
 
 plt.figure()
 #plt.plot(freq_ref*10**(-12),phase_dif, label='phase differenz')
-plt.plot(freq_ref*10**(-12),phase, label='phase directly from H_0')
+plt.plot(freq_ref*10**(-12),angle, label='angle directly from H_0')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel(r'$\Phi$')
@@ -275,10 +312,11 @@ n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
 plt.figure()
 #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
 plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 4.5)
-#plt.ylim(0,4)
+plt.ylim(0,2)
 plt.legend()
 plt.grid()
 plt.title('The real part of the refractive index of silicon')
@@ -292,6 +330,7 @@ plt.close()
 plt.figure()
 #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
 plt.plot(freq_ref_zero*10**(-12), n_real_zero, label='real part of refractive index')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 4.5)
@@ -345,7 +384,7 @@ alpha = 2*freq_ref *n_im/c
 
 plt.figure()
 plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
-#plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], label='refference n from steffens program')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c='k', label='refference k from PCA program')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel(r'$\alpha$')
@@ -365,7 +404,7 @@ alpha_zero = 2*freq_ref_zero*n_im_zero/c
 
 plt.figure()
 plt.plot(freq_ref_zero*10**(-12), alpha_zero/100, label='Absorption coefficient')
-#plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], label='refference n from steffens program')
+plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c="k",label='refference k from PCA program')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel(r'$\alpha$')
