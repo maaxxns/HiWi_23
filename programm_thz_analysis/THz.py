@@ -35,7 +35,7 @@ def FFT_func(I, t): # FFT
 def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_correction_in_THz_TDS_JIMT_revision_clean.pdf
     angle_ref = np.angle(amp_ref)
     angle_sam = np.angle(amp_sam)
-    phase_dif = (np.unwrap(abs(angle_ref - angle_sam)))
+    phase_dif = (np.unwrap(np.abs(angle_ref - angle_sam)))
     params,_ = curve_fit(lin, freq_ref, phase_dif)
     phase_dif_0 = phase_dif - 2*np.pi*np.floor(params[1]/np.pi)
     phase_ref_0 = freq_ref * t_peak_ref
@@ -43,44 +43,75 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
     phase_offset = freq_ref * (t_peak_sam - t_peak_ref)
     return phase_dif_0 - phase_ref_0 + phase_sam_0 + phase_offset
 
-def error_function(H_0, H_0_measured): # The error function needs to be minimized to find the values for n and k
+def error_function(H_0_calc, H_0_measured): # The error function needs to be minimized to find the values for n and k
     # a good explanation can be found  "A Reliable Method for Extraction of Material
     # Parameters in Terahertz Time-Domain Spectroscopy"
-    delta_rho = np.ln(abs(H_0)) - np.ln(abs(H_0_measured))
-    angle_0 = np.angle(H_0) #angle between complex numbers
-    phase_0 = np.unwrap(angle_0)  #phase 
+    delta_rho = np.zeros(H_0_calc.shape)
+    delta_phi = np.zeros(H_0_calc.shape)
     angle_mes = np.angle(H_0_measured)
     phase_mes = np.unwrap(angle_mes)
-    delta_phi = phase_0 - phase_mes
+    angle_0 = np.zeros(H_0_calc.shape)
+    phase_0 = np.zeros(H_0_calc.shape)
+    delta = np.zeros(H_0_calc.shape)
+    for i in range(len(H_0_calc[1])):
+        for j in range(len(H_0_calc[1])): # array should be symmetrical
+            for n in range(3591):
+                if(H_0_calc[n,i,j] == 0):
+                    print("ALARM: ", i , j)
+            delta_rho[:,i,j] = np.log(np.abs(H_0_calc[:,i,j])) - np.log(np.abs(H_0_measured))
+            angle_0[:,i,j] = np.angle(H_0_calc[:,i,j]) #angle between complex numbers
+            phase_0[:,i,j] = np.unwrap(angle_0[:,i,j])  #phase 
+            delta_phi[:,i,j] = phase_0[:,i,j] - phase_mes
+    print(delta_phi.shape, ' ', delta_rho.shape)
     return delta_phi**2 + delta_rho**2 # this should become zero in the process
 
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def hessian(x):
-    """
-    Calculate the hessian matrix with finite differences
-    Parameters:
-       - x : ndarray
-    Returns:
-       an array of shape (x.dim, x.ndim) + x.shape
-       where the array[i, j, ...] corresponds to the second derivative x_ij
-    """
-    x_grad = np.gradient(x) 
-    hessian = np.empty((x.ndim, x.ndim) + x.shape, dtype=x.dtype) 
-    for k, grad_k in enumerate(x_grad):
-        # iterate over dimensions
-        # apply gradient again to every component of the first derivative.
-        tmp_grad = np.gradient(grad_k) 
-        for l, grad_kl in enumerate(tmp_grad):
-            hessian[k, l, :, :] = grad_kl
-    return hessian
+def gradient_f(x, f):
+  assert (x.shape[0] >= x.shape[1]), "the vector should be a column vector"
+  x = x.astype(float)
+  N = x.shape[0]
+  gradient = []
+  for i in range(N):
+    eps = abs(x[i]) *  np.finfo(np.float32).eps 
+    xx0 = 1. * x[i]
+    f0 = f(x)
+    x[i] = x[i] + eps
+    f1 = f(x)
+    gradient.append(np.asscalar(np.array([f1 - f0]))/eps)
+    x[i] = xx0
+  return np.array(gradient).reshape(x.shape)
 
-def r_p(r_p, H_0, H_0_measured):
+def hessian (x, the_func):
+  N = x.shape[0]
+  hessian = np.zeros((N,N)) 
+  gd_0 = gradient_f( x, the_func)
+  eps = np.linalg.norm(gd_0) * np.finfo(np.float32).eps 
+  for i in range(N):
+    xx0 = 1.*x[i]
+    x[i] = xx0 + eps
+    gd_1 =  gradient_f(x, the_func)
+    hessian[:,i] = ((gd_1 - gd_0)/eps).reshape(x.shape[0])
+    x[i] =xx0
+  return hessian
+
+def r_p(r_p, H_0, H_0_measured, n, k):
     for i in range(10):
-        A = hessian(error_function(H_0, H_0_measured))
+        delta = error_function(H_0, H_0_measured)
+        A = hessian(delta, paraboilid)
+        print(A.shape)
         r_p_1 = r_p - np.linalg.inv(A) * np.grad(r_p)
         r_p = r_p_1
+    return r_p  
+
+def Transfer_function(omega, n, k, l, fp):
+    T = 4*n/(n + 1)**2 * np.exp(-k*(omega*l/c))*np.exp(-1j * (n - 1) *(omega*l/c))
+    if(fp):
+        FP = 1/(1 - ((1 - (n+1j*k))/(1 + (n + 1j*k)))**2 * np.exp(-2*1j * (n + 1j *k)* (omega*l/c)))
+        return T*FP
+    else:
+        return T
 
 ###################################################################################################################################
 #       All data is read in, in this block.
@@ -415,3 +446,36 @@ plt.grid()
 plt.title('The absorption coeffiecient of silicon for zero padded data')
 plt.savefig('build/THz_absorption_zero.pdf')
 plt.close()
+
+###################################################################################################################################
+
+###################################################################################################################################
+# Here Starts the numerical process of finding the refractive index
+###################################################################################################################################
+
+###################################################################################################################################
+n_0 = np.linspace(0.5, 5, 10)
+k_0 = np.linspace(0.5, 5, 10)
+T = np.zeros((len(freq_ref),len(n_0),len(k_0)))
+print(T.shape)
+for omega in range(len(freq_ref)):
+    for i in range(len(n_0)):
+        for l in range(len(k_0)):
+            T[omega][i][l] = Transfer_function(freq_ref[omega], n_0[i], k_0[l], d, False)
+    
+plt.figure()
+ax = plt.figure().add_subplot(projection='3d')
+
+delta = error_function(T, H_0_value) # shapes dont fit
+print(delta[100])
+# Plot the 3D surface
+ax.plot_surface(n_0, k_0, delta[100], edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
+                alpha=0.3)
+ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(0, 2000),
+       xlabel='n', ylabel='k', zlabel='delta')
+plt.grid()
+plt.title('delta')
+plt.savefig('build/Transferfunction.pdf')
+plt.close()
+
+
