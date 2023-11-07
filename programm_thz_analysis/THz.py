@@ -48,33 +48,37 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
     delta_rho = np.zeros(H_0_calc.shape) # prepare arrays of same shape as H_0
     delta_phi = np.zeros(H_0_calc.shape)
     angle_mes = np.angle(H_0_measured)
-    phase_mes = np.unwrap(angle_mes)
+    print(H_0_measured.size)
+    if H_0_measured.size < 2:
+        phase_mes = np.unwrap([angle_mes])
+    else:
+        phase_mes = np.unwrap(angle_mes)    
     angle_0 = np.zeros(H_0_calc.shape)
     phase_0 = np.zeros(H_0_calc.shape)
-    delta = np.zeros(H_0_calc.shape)
-    for i in range(len(H_0_calc[1])):
-        for j in range(len(H_0_calc[1])): # array should be symmetrical
-            for n in range(3591):
-                if(abs(H_0_calc[n,i,j]) == 0):
-                    print("ALARM: ", i , j, abs(H_0_calc[n,i,j]))
-            delta_rho[:,i,j] = np.log(np.abs(H_0_calc[:,i,j])) - np.log(np.abs(H_0_measured))
-            angle_0[:,i,j] = np.angle(H_0_calc[:,i,j]) #angle between complex numbers
-            phase_0[:,i,j] = np.unwrap(angle_0[:,i,j])  #phase 
-            delta_phi[:,i,j] = phase_0[:,i,j] - phase_mes
+    for i in range(len(H_0_calc)):
+        for j in range(len(H_0_calc)): # array should be symmetrical
+            delta_rho[i,j] = np.log(np.abs(H_0_calc[i,j])) - np.log(np.abs(H_0_measured))
+            angle_0[i,j] = np.angle(H_0_calc[i,j]) #angle between complex numbers
+            phase_0[i,j] = np.unwrap([angle_0[i,j]])  #phase 
+            delta_phi[i,j] = phase_0[i,j] - phase_mes
     print(delta_phi.shape, ' ', delta_rho.shape)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def hessian(Matrix):
-    grad_temp = np.gradient(Matrix)
-    hesse = np.gradient(grad_temp)
-    print(Matrix[0])
-    return hesse
+def hessian(x):
+    x_grad = np.gradient(x) 
+    hessian = np.empty((x.ndim, x.ndim) + x.shape, dtype=x.dtype) 
+    for k, grad_k in enumerate(x_grad):
+        # iterate over dimensions
+        # apply gradient again to every component of the first derivative.
+        tmp_grad = np.gradient(grad_k) 
+        for l, grad_kl in enumerate(tmp_grad):
+            hessian[k, l, :, :] = grad_kl
+    return hessian
 
-def newton_r_p(r_p, H_0, H_0_measured): #newton iteration step to find the best value of r=(n_2,k_2)
-    delta = error_function(H_0, H_0_measured)
+def newton_r_p(r_p, delta): #newton iteration step to find the best value of r=(n_2,k_2)
     A = hessian(delta) 
     print(A.shape)
     r_p_1 = r_p - np.linalg.inv(A) * np.grad(delta)
@@ -82,6 +86,8 @@ def newton_r_p(r_p, H_0, H_0_measured): #newton iteration step to find the best 
 
 def Transfer_function(omega, n, k, l, fp):
     T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))
+    #if np.isinf(T) or np.isnan(T):
+    #    print("Input values for T give rise to value error: n = ", n, " k = ", k, " omgea = ", omega)
     if(fp):
         FP = 1/(1 - ((1 - (n+1j*k))/(1 + (n + 1j*k)))**2 * np.exp(-2*1j * (n + 1j *k)* (omega*l/c)))
         return T*FP
@@ -433,24 +439,31 @@ plt.close()
     However, this will used up way too much calculation power for my litle laptop so I start with just one frequency.
     If I get that stuff right I move on to the whole frequency range."""
 
-n_0 = np.linspace(0.5, 5, 10)
-k_0 = np.linspace(0.5, 5, 10)
-T = np.zeros((len(freq_ref),len(n_0),len(k_0)), dtype='complex_')
-print(T.shape)
-for omega in range(len(freq_ref)):
-    for i in range(len(n_0)):
-        for l in range(len(k_0)):
-            T[omega][i][l] = Transfer_function(freq_ref[omega], n_0[i], k_0[l], d, False)
+print("-----------------------------------------------------------")
+
+""""Okay ich glaub was ich eigentlich machen muss ist ein startwert zu wählen.
+    Den nutze ich um eine Abweichung also delta zu berechnen.
+    Mit dem Wert mache ich zudem dann den Newton schritt.
+    Die Hesse Matrix berechne ich dabei an dem entsprechenden Punkt.
+    Jetzt ist die Frage nur noch wie ich die Hesse Matrix berechne """
+
+n_0 = np.linspace(2, 2.00001, 2)
+k_0 = np.linspace(2, 2.00001, 2)
+T = np.zeros((len(n_0),len(k_0)), dtype='complex_')
+test_freq_index = len(freq_ref)//2
+for i in range(len(n_0)):
+    for l in range(len(k_0)):
+        T[i][l] = Transfer_function(freq_ref[test_freq_index], n_0[i], k_0[l], d, False) # for testing we use the middle of the frequency
     
 plt.figure()
-
-delta = error_function(T, H_0_value) # shapes dont fit
-print(delta[100])
+delta = error_function(T, H_0_value[test_freq_index]) # shapes dont fit
+delta[np.isinf(delta)] = 0
+delta[np.isnan(delta)] = 0
 # Plot the 3D surface
 ax = plt.figure().add_subplot(projection='3d')
-ax.plot_surface(n_0, k_0, delta[50], edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
-                alpha=0.3)
-ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(0, 2000),
+ax.plot_surface(n_0, k_0, delta, edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
+                alpha=0.3, )
+ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(np.min(delta), np.max(delta)),
        xlabel='n', ylabel='k', zlabel='delta')
 plt.grid()
 plt.title('delta')
@@ -460,10 +473,10 @@ plt.close()
 ###################################################################################################################################
     # Minimizing with newton
 ###################################################################################################################################
-r_0 = np.array([0,0])
+r_0 = [n_0,k_0]
 r_p = r_0 # set the start value
 for i in range(100):
-    r_p = newton_r_p(r_p, T, H_0_value)
+    r_p = newton_r_p(r_p, delta)
 
 print(r_p)
 
