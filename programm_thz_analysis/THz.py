@@ -24,7 +24,6 @@ def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness o
     n_im = c/(freq *d) *(ln_a - ln_b)
     return n_im
 
-
 def FFT_func(I, t): # FFT
     N = len(t) #number of total data points
     timestep = np.abs(t[2]-t[3]) # the time between each data point
@@ -46,7 +45,7 @@ def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_cor
 def error_function(H_0_calc, H_0_measured): # The error function needs to be minimized to find the values for n and k
     # a good explanation can be found  "A Reliable Method for Extraction of Material
     # Parameters in Terahertz Time-Domain Spectroscopy"
-    delta_rho = np.zeros(H_0_calc.shape)
+    delta_rho = np.zeros(H_0_calc.shape) # prepare arrays of same shape as H_0
     delta_phi = np.zeros(H_0_calc.shape)
     angle_mes = np.angle(H_0_measured)
     phase_mes = np.unwrap(angle_mes)
@@ -56,57 +55,33 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
     for i in range(len(H_0_calc[1])):
         for j in range(len(H_0_calc[1])): # array should be symmetrical
             for n in range(3591):
-                if(H_0_calc[n,i,j] == 0):
-                    print("ALARM: ", i , j)
+                if(abs(H_0_calc[n,i,j]) == 0):
+                    print("ALARM: ", i , j, abs(H_0_calc[n,i,j]))
             delta_rho[:,i,j] = np.log(np.abs(H_0_calc[:,i,j])) - np.log(np.abs(H_0_measured))
             angle_0[:,i,j] = np.angle(H_0_calc[:,i,j]) #angle between complex numbers
             phase_0[:,i,j] = np.unwrap(angle_0[:,i,j])  #phase 
             delta_phi[:,i,j] = phase_0[:,i,j] - phase_mes
     print(delta_phi.shape, ' ', delta_rho.shape)
-    return delta_phi**2 + delta_rho**2 # this should become zero in the process
+    return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def gradient_f(x, f):
-  assert (x.shape[0] >= x.shape[1]), "the vector should be a column vector"
-  x = x.astype(float)
-  N = x.shape[0]
-  gradient = []
-  for i in range(N):
-    eps = abs(x[i]) *  np.finfo(np.float32).eps 
-    xx0 = 1. * x[i]
-    f0 = f(x)
-    x[i] = x[i] + eps
-    f1 = f(x)
-    gradient.append(np.asscalar(np.array([f1 - f0]))/eps)
-    x[i] = xx0
-  return np.array(gradient).reshape(x.shape)
+def hessian(Matrix):
+    grad_temp = np.gradient(Matrix)
+    hesse = np.gradient(grad_temp)
+    print(Matrix[0])
+    return hesse
 
-def hessian (x, the_func):
-  N = x.shape[0]
-  hessian = np.zeros((N,N)) 
-  gd_0 = gradient_f( x, the_func)
-  eps = np.linalg.norm(gd_0) * np.finfo(np.float32).eps 
-  for i in range(N):
-    xx0 = 1.*x[i]
-    x[i] = xx0 + eps
-    gd_1 =  gradient_f(x, the_func)
-    hessian[:,i] = ((gd_1 - gd_0)/eps).reshape(x.shape[0])
-    x[i] =xx0
-  return hessian
-
-def r_p(r_p, H_0, H_0_measured, n, k):
-    for i in range(10):
-        delta = error_function(H_0, H_0_measured)
-        A = hessian(delta, paraboilid)
-        print(A.shape)
-        r_p_1 = r_p - np.linalg.inv(A) * np.grad(r_p)
-        r_p = r_p_1
-    return r_p  
+def newton_r_p(r_p, H_0, H_0_measured): #newton iteration step to find the best value of r=(n_2,k_2)
+    delta = error_function(H_0, H_0_measured)
+    A = hessian(delta) 
+    print(A.shape)
+    r_p_1 = r_p - np.linalg.inv(A) * np.grad(delta)
+    return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def Transfer_function(omega, n, k, l, fp):
-    T = 4*n/(n + 1)**2 * np.exp(-k*(omega*l/c))*np.exp(-1j * (n - 1) *(omega*l/c))
+    T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))
     if(fp):
         FP = 1/(1 - ((1 - (n+1j*k))/(1 + (n + 1j*k)))**2 * np.exp(-2*1j * (n + 1j *k)* (omega*l/c)))
         return T*FP
@@ -454,9 +429,13 @@ plt.close()
 ###################################################################################################################################
 
 ###################################################################################################################################
+""" For an actual calculation of n and k we would want to do it over the whole measured frequency range.
+    However, this will used up way too much calculation power for my litle laptop so I start with just one frequency.
+    If I get that stuff right I move on to the whole frequency range."""
+
 n_0 = np.linspace(0.5, 5, 10)
 k_0 = np.linspace(0.5, 5, 10)
-T = np.zeros((len(freq_ref),len(n_0),len(k_0)))
+T = np.zeros((len(freq_ref),len(n_0),len(k_0)), dtype='complex_')
 print(T.shape)
 for omega in range(len(freq_ref)):
     for i in range(len(n_0)):
@@ -464,18 +443,27 @@ for omega in range(len(freq_ref)):
             T[omega][i][l] = Transfer_function(freq_ref[omega], n_0[i], k_0[l], d, False)
     
 plt.figure()
-ax = plt.figure().add_subplot(projection='3d')
 
 delta = error_function(T, H_0_value) # shapes dont fit
 print(delta[100])
 # Plot the 3D surface
-ax.plot_surface(n_0, k_0, delta[100], edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
+ax = plt.figure().add_subplot(projection='3d')
+ax.plot_surface(n_0, k_0, delta[50], edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
                 alpha=0.3)
 ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(0, 2000),
        xlabel='n', ylabel='k', zlabel='delta')
 plt.grid()
 plt.title('delta')
-plt.savefig('build/Transferfunction.pdf')
+plt.savefig('build/Errorfunction.pdf')
 plt.close()
 
+###################################################################################################################################
+    # Minimizing with newton
+###################################################################################################################################
+r_0 = np.array([0,0])
+r_p = r_0 # set the start value
+for i in range(100):
+    r_p = newton_r_p(r_p, T, H_0_value)
+
+print(r_p)
 
