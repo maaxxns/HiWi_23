@@ -4,6 +4,7 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
+import csv
 ###################################################################################################################################
 # Functions
 
@@ -67,20 +68,42 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def hessian(x):
-    x_grad = np.gradient(x) 
-    hessian = np.empty((x.ndim, x.ndim) + x.shape, dtype=x.dtype) 
-    for k, grad_k in enumerate(x_grad):
-        # iterate over dimensions
-        # apply gradient again to every component of the first derivative.
-        tmp_grad = np.gradient(grad_k) 
-        for l, grad_kl in enumerate(tmp_grad):
-            hessian[k, l, :, :] = grad_kl
-    return hessian
+def hessian(x, n, k):
+    """ x is a Matrix that we want to take the second derivitive of.
+    I use the formula derived in the theoretical physics script that patrick send me.
+    One problem with that formula is that they reorder the matrix as a vector, which I dont want to do.
+    So we have to reshape the array twice.
+    Another problem is how to manage the edges of the matrix. 
+    The scheme of patrick is for solving the schroedringer equation so it has pre determined boundary conditions. 
+    Thats not the case for me."""
+    L = np.size(x)
+    M_N = np.shape(x)[0] # should be symmertrical so M = N 
+    h_n = np.abs(np.max(n) - np.min(n))/L
+    h_k = np.abs(np.max(k) - np.min(k))/L
+    x = np.reshape(x, L)
+    hessian_ = np.zeros(L)
+    for l in range(L):
+        if(l - M_N) < 0:
+            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l + M_N])/h_k**2) # this is the formula in the script
+        elif(l-1) < 0:
+            hessian_[l] = -((2 * x[l] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
+        if(l + M_N) > L:
+            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N])/h_k**2) # this is the formula in the script
+        elif(l + 1) > L:
+            hessian_[l] = -((2 * x[l] - x[l-1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
+        else:
+            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
+    hessian_ = np.reshape(hessian_, (M_N, M_N)) # back into original shape
+    with open('build/testing/hessian.csv', 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(hessian_)   
+    return hessian_
 
 def newton_r_p(r_p, delta): #newton iteration step to find the best value of r=(n_2,k_2)
-    A = hessian(delta) 
-    print(A.shape)
+    with open('build/testing/delta.csv', 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(delta)   
+    A = hessian(delta, r_p[0], r_p[1]) 
     r_p_1 = r_p - np.linalg.inv(A) * np.grad(delta)
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
@@ -94,6 +117,16 @@ def Transfer_function(omega, n, k, l, fp):
     else:
         return T
 
+def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2, k_3, l, fp):
+    n_1 = n_1_real + 1j*k_1
+    n_2 = n_2_real + 1j*k_2 
+    n_3 = n_3_real + 1j*k_3
+    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp(-1j*(n_2 - n_air) * omega*l/c)
+    if(fp):
+        FP = 1/(1 - ((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * omega*l/c))
+        return T*FP
+    else:
+        return T
 ###################################################################################################################################
 #       All data is read in, in this block.
 #       Necessary data are
@@ -105,7 +138,7 @@ def Transfer_function(omega, n, k, l, fp):
 # The thickness of the probe
 
 d = 26*10**(-3) # thickness of the probe in SI
-
+n_air = 1
 #Read the excel file
 material_properties_ref = np.genfromtxt('data/teflon_1_material_properties.txt')
 data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
@@ -447,22 +480,49 @@ print("-----------------------------------------------------------")
     Die Hesse Matrix berechne ich dabei an dem entsprechenden Punkt.
     Jetzt ist die Frage nur noch wie ich die Hesse Matrix berechne """
 
-n_0 = np.linspace(2, 2.00001, 2)
-k_0 = np.linspace(2, 2.00001, 2)
+
+""" Die Transferfunktion gibt mir irgendwie keine sinnvollen werte zurück also plotte ich die erstmal für ein paar testwerte
+    komischer weise scheint sie gegen hohe frequezen zu divergieren.
+    
+    Dieses Problem scheint zu verschwinden wenn ich die Fabry perot faktoren beachte.
+    Allerdings stoße ich weiterhin auch divergenzen für bestimmte kombinationen aus n,k und omega."""
+
+plt.figure()
+plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).real, label='Transferfunction real part')
+plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).imag, label='Transferfunction imag part')
+plt.legend()
+plt.savefig('build/testing/Transferfunction_n_1_5_k_1_5.pdf')
+plt.close()
+
+n_0 = np.linspace(2, 5, 10)
+k_0 = np.linspace(2, 5, 10)
+
 T = np.zeros((len(n_0),len(k_0)), dtype='complex_')
-test_freq_index = len(freq_ref)//2
+test_freq_index = 100
 for i in range(len(n_0)):
     for l in range(len(k_0)):
-        T[i][l] = Transfer_function(freq_ref[test_freq_index], n_0[i], k_0[l], d, False) # for testing we use the middle of the frequency
-    
+        T[i][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,n_0[i], n_air, n_air, k_0[l], n_air, d, True) # for testing we use the middle of the frequency
+print("shape pf T:", T.shape)
+with open('build/testing/transfer_calc.csv', 'w') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerows(T)   
+
+
+
+
 plt.figure()
 delta = error_function(T, H_0_value[test_freq_index]) # shapes dont fit
 delta[np.isinf(delta)] = 0
 delta[np.isnan(delta)] = 0
+print("shape delta", delta.shape)
 # Plot the 3D surface
 ax = plt.figure().add_subplot(projection='3d')
+
+""" The surface plot does not look the way I would expect it too look.
+    I thought it would be a surface and not a line.
+    However, this could just be a bug in my code, as T is still 2 dimensional, as is delta"""
 ax.plot_surface(n_0, k_0, delta, edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
-                alpha=0.3, )
+                alpha=0.3)
 ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(np.min(delta), np.max(delta)),
        xlabel='n', ylabel='k', zlabel='delta')
 plt.grid()
@@ -473,10 +533,19 @@ plt.close()
 ###################################################################################################################################
     # Minimizing with newton
 ###################################################################################################################################
-r_0 = [n_0,k_0]
+r_0 = [n_0,k_0] # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
 for i in range(100):
-    r_p = newton_r_p(r_p, delta)
+    print(i)
+    r_p = newton_r_p(r_p, delta) # r_p[0] = n, r_p[1] = k
 
 print(r_p)
 
+"""Things that dont work:
+    - Transferfunction gives weird values and is divergent for some inputs
+    - Delta plot should look like a paraboloid, however it is just a parabel. So one dimension is missing
+    - I have no idea how to calculate the matrix A that is necessary for the newton raphson methode
+        it should be the hessian matrix of the taylor expansion of delta.
+        However, I dont know how to calculate neither the taylor expansion of delta nor the hessian matrix as my function is basically just a matrix.
+        I could try to take the numerical gradient of the matrox two times, but that does not feel right, as I also could just search the array for the lowest number or not?
+    - If I would know how to calculate A the progamm is basically done"""
