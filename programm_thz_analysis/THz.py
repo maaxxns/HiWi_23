@@ -82,16 +82,18 @@ def hessian(x, n, k):
     h_k = np.abs(np.max(k) - np.min(k))/L
     x = np.reshape(x, L)
     hessian_ = np.zeros(L)
-    for l in range(L):
+    for l in range(L): # I have absolutly no idea if the edge cases are correct, this way is definitly not the most efficient
         if(l - M_N) < 0:
             hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l + M_N])/h_k**2) # this is the formula in the script
         elif(l-1) < 0:
             hessian_[l] = -((2 * x[l] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
-        if(l + M_N) > L:
+        elif(l + M_N) >= L and (l + 1) < L:
             hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N])/h_k**2) # this is the formula in the script
-        elif(l + 1) > L:
+        elif(l + 1) >= L and (l + M_N) < L:
             hessian_[l] = -((2 * x[l] - x[l-1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
-        else:
+        elif((l + M_N) >= L and (l + 1) >= L):
+            hessian_[l] = -((2 * x[l] - x[l-1])/h_n**2 + (2 * x[l] - x[l - M_N])/h_k**2) # this is the formula in the script
+        else:#
             hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
     hessian_ = np.reshape(hessian_, (M_N, M_N)) # back into original shape
     with open('build/testing/hessian.csv', 'w') as csvfile:
@@ -104,7 +106,8 @@ def newton_r_p(r_p, delta): #newton iteration step to find the best value of r=(
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(delta)   
     A = hessian(delta, r_p[0], r_p[1]) 
-    r_p_1 = r_p - np.linalg.inv(A) * np.grad(delta)
+    print(np.gradient(delta))
+    r_p_1 = r_p - np.linalg.inv(A) * np.gradient(delta)
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def Transfer_function(omega, n, k, l, fp):
@@ -494,8 +497,10 @@ plt.legend()
 plt.savefig('build/testing/Transferfunction_n_1_5_k_1_5.pdf')
 plt.close()
 
-n_0 = np.linspace(2, 5, 10)
-k_0 = np.linspace(2, 5, 10)
+h = 0.0001
+
+n_0 = np.array([2 - h, 2, 2 + h])
+k_0 = np.array([2 - h, 2, 2 + h])
 
 T = np.zeros((len(n_0),len(k_0)), dtype='complex_')
 test_freq_index = 100
@@ -538,7 +543,10 @@ r_p = r_0 # set the start value
 for i in range(100):
     print(i)
     r_p = newton_r_p(r_p, delta) # r_p[0] = n, r_p[1] = k
-
+    for i in range(len(r_p[1,:])):
+        for l in range(len(r_p[0,:])):
+            T[i][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,r_p[0,i], n_air, n_air, r_p[1,l], n_air, d, True) 
+    delta = error_function(T, H_0_value[test_freq_index])
 print(r_p)
 
 """Things that dont work:
