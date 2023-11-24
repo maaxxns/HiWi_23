@@ -68,6 +68,18 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
+def grad(X, n, k):
+    L = np.size(X)
+    M_N = np.shape(X)[0] # should be symmertrical so M = N 
+    h_n = np.abs(np.max(n) - np.min(n))/L
+    h_k = np.abs(np.max(k) - np.min(k))/L
+    grad_ = np.zeros(2)
+    grad_[0] = (X[1,2] - X[1,0])/h_n
+    grad_[1] = (X[2,1] - X[0,1])/h_k
+    print(grad_)
+    return 0
+
+
 def hessian(x, n, k):
     """ x is a Matrix that we want to take the second derivitive of.
     I use the formula derived in the theoretical physics script that patrick send me.
@@ -76,38 +88,50 @@ def hessian(x, n, k):
     Another problem is how to manage the edges of the matrix. 
     The scheme of patrick is for solving the schroedringer equation so it has pre determined boundary conditions. 
     Thats not the case for me."""
-    L = np.size(x)
-    M_N = np.shape(x)[0] # should be symmertrical so M = N 
-    h_n = np.abs(np.max(n) - np.min(n))/L
-    h_k = np.abs(np.max(k) - np.min(k))/L
-    x = np.reshape(x, L)
-    hessian_ = np.zeros(L)
-    for l in range(L): # I have absolutly no idea if the edge cases are correct, this way is definitly not the most efficient
-        if(l - M_N) < 0:
-            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l + M_N])/h_k**2) # this is the formula in the script
-        elif(l-1) < 0:
-            hessian_[l] = -((2 * x[l] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
-        elif(l + M_N) >= L and (l + 1) < L:
-            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N])/h_k**2) # this is the formula in the script
-        elif(l + 1) >= L and (l + M_N) < L:
-            hessian_[l] = -((2 * x[l] - x[l-1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
-        elif((l + M_N) >= L and (l + 1) >= L):
-            hessian_[l] = -((2 * x[l] - x[l-1])/h_n**2 + (2 * x[l] - x[l - M_N])/h_k**2) # this is the formula in the script
-        else:#
-            hessian_[l] = -((2 * x[l] - x[l-1] - x[l+1])/h_n**2 + (2 * x[l] - x[l - M_N] - x[l + M_N])/h_k**2) # this is the formula in the script
-    hessian_ = np.reshape(hessian_, (M_N, M_N)) # back into original shape
+    N = np.shape(x)[0]
+    M = np.shape(x)[1]
+    print("shape x, ", np.shape(x))
+    x = np.reshape(x, N*M)
+    print("x after reshape",np.shape(x) )
+    print("N ", N)
+    h_n = (np.max(n) - np.min(n))/N*M
+    h_k = (np.max(k) - np.min(k))/N*M
+    hessian_ = np.zeros(N*M)
+    out_of_bounce = 1.0*10**6
+    hessian_[0] = (2*x[0] - out_of_bounce - x[0 + 1])/h_n + (2 * x[0] - out_of_bounce - x[0 + N])/h_k
+    hessian_[N*M-1] = (2*x[N*M-1] - x[N*M - 2] - out_of_bounce)/h_n + (2 * x[N*M-1] - x[N*M - 1 - N] - out_of_bounce)/h_k
+    for l in np.arange(start = 1, stop = N*M - 2): # we already calculated two values of hessian_ so we take those out of iteration and shift the index by +1
+        if(l - N < 0):
+            hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - out_of_bounce - x[l + N])/h_k
+            continue
+        if(l + N >= N*M):
+            hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - x[l - N] - out_of_bounce)/h_k
+            continue
+        print(l)
+        hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - x[l - N] - x[l + N])/h_k
+
+    hessian_ = np.reshape(hessian_, (N,M))
+    hessian_tot = np.zeros((N*M,M*M))
+    for p in np.arange(0, N):
+        for l in range(N):
+            for m in range(M):
+                    hessian_tot[l + p*N, m + p*N] = hessian_[l,m]
     with open('build/testing/hessian.csv', 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
-            csvwriter.writerows(hessian_)   
-    return hessian_
+            csvwriter.writerows(hessian_tot)   
+    return hessian_tot
 
 def newton_r_p(r_p, delta): #newton iteration step to find the best value of r=(n_2,k_2)
     with open('build/testing/delta.csv', 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(delta)   
     A = hessian(delta, r_p[0], r_p[1]) 
-    print(np.gradient(delta))
-    r_p_1 = r_p - np.linalg.inv(A) * np.gradient(delta)
+    with open('build/testing/gradient.csv', 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(np.reshape(np.gradient(delta), (2,9))) 
+    grad(delta,r_p[0][1], r_p[1][1])
+    print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(np.gradient(delta)), "The shape of the hessian ", np.shape(A))
+    r_p_1 = r_p - np.linalg.inv(A) * np.reshape(np.gradient(delta), (9,2))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def Transfer_function(omega, n, k, l, fp):
@@ -510,8 +534,7 @@ for i in range(len(n_0)):
 print("shape pf T:", T.shape)
 with open('build/testing/transfer_calc.csv', 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
-    csvwriter.writerows(T)   
-
+    csvwriter.writerows(T)  
 
 
 
@@ -543,9 +566,9 @@ r_p = r_0 # set the start value
 for i in range(100):
     print(i)
     r_p = newton_r_p(r_p, delta) # r_p[0] = n, r_p[1] = k
-    for i in range(len(r_p[1,:])):
+    for m in range(len(r_p[1,:])):
         for l in range(len(r_p[0,:])):
-            T[i][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,r_p[0,i], n_air, n_air, r_p[1,l], n_air, d, True) 
+            T[m][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,r_p[0,m], n_air, n_air, r_p[1,l], n_air, d, True) 
     delta = error_function(T, H_0_value[test_freq_index])
 print(r_p)
 
