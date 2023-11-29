@@ -5,6 +5,19 @@ from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
 import csv
+from dataclasses import dataclass
+
+###################################################################################################################################
+# Datatypes
+
+@dataclass
+class Material_parameters:
+    d: float
+    n_1: float
+    k_1: float 
+    n_3: float 
+    k_3: float
+
 ###################################################################################################################################
 # Functions
 
@@ -65,73 +78,65 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
     print(delta_phi.shape, ' ', delta_rho.shape)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
+def delta_of_r(n, k, H_0_measured, freq, Material_parameter): #if needed n_1,n_3 and k_1, k_3 can also be added
+    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, False)
+    angle_mes = np.angle(H_0_measured)  
+    phase_mes = np.unwrap([angle_mes])  
+    delta_rho = np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))
+    angle_0 = np.angle(H_0_calc) #angle between complex numbers
+    phase_0 = np.unwrap([angle_0])  #phase 
+    delta_phi = phase_0 - phase_mes
+    #print("Shape delta: ", np.shape(delta_phi**2 + delta_rho**2))
+    return delta_phi**2 + delta_rho**2 # this should be minimized in the process
+
+
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def grad(X, n, k):
-    L = np.size(X)
-    M_N = np.shape(X)[0] # should be symmertrical so M = N 
-    h_n = np.abs(np.max(n) - np.min(n))/L
-    h_k = np.abs(np.max(k) - np.min(k))/L
-    grad_ = np.zeros(2)
-    grad_[0] = (X[1,2] - X[1,0])/h_n
-    grad_[1] = (X[2,1] - X[0,1])/h_k
-    print(grad_)
-    return 0
+def grad(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
+    """ This function calculates the gradient of the delta(r_p) function.
+        The result will be a vector of dim 2 [A, B] so like
+        A
+        B
+    """
+    A = (delta_of_r(n + h/2, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h/2, k, H_0_measured, freq, Material_parameter))/h
+    # A = delta(r_p)/dn = (delta(n + h/2, k) - delta(n - h/2, k)) / h
+    B = (delta_of_r(n, k + h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h/2, H_0_measured, freq, Material_parameter))/h 
+    grad_ = np.array([A[0], B[0]])
+    return grad_
 
 
-def hessian(x, n, k):
-    """ x is a Matrix that we want to take the second derivitive of.
-    I use the formula derived in the theoretical physics script that patrick send me.
-    One problem with that formula is that they reorder the matrix as a vector, which I dont want to do.
-    So we have to reshape the array twice.
-    Another problem is how to manage the edges of the matrix. 
-    The scheme of patrick is for solving the schroedringer equation so it has pre determined boundary conditions. 
-    Thats not the case for me."""
-    N = np.shape(x)[0]
-    M = np.shape(x)[1]
-    print("shape x, ", np.shape(x))
-    x = np.reshape(x, N*M)
-    print("x after reshape",np.shape(x) )
-    print("N ", N)
-    h_n = (np.max(n) - np.min(n))/N*M
-    h_k = (np.max(k) - np.min(k))/N*M
-    hessian_ = np.zeros(N*M)
-    out_of_bounce = 1.0*10**6
-    hessian_[0] = (2*x[0] - out_of_bounce - x[0 + 1])/h_n + (2 * x[0] - out_of_bounce - x[0 + N])/h_k
-    hessian_[N*M-1] = (2*x[N*M-1] - x[N*M - 2] - out_of_bounce)/h_n + (2 * x[N*M-1] - x[N*M - 1 - N] - out_of_bounce)/h_k
-    for l in np.arange(start = 1, stop = N*M - 2): # we already calculated two values of hessian_ so we take those out of iteration and shift the index by +1
-        if(l - N < 0):
-            hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - out_of_bounce - x[l + N])/h_k
-            continue
-        if(l + N >= N*M):
-            hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - x[l - N] - out_of_bounce)/h_k
-            continue
-        print(l)
-        hessian_[l] = (2*x[l] - x[l - 1] - x[l + 1])/h_n + (2 * x[l] - x[l - N] - x[l + N])/h_k
-
-    hessian_ = np.reshape(hessian_, (N,M))
-    hessian_tot = np.zeros((N*M,M*M))
-    for p in np.arange(0, N):
-        for l in range(N):
-            for m in range(M):
-                    hessian_tot[l + p*N, m + p*N] = hessian_[l,m]
+def hessian(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
+    """ This function calculates the second derivitave of delta(r_p).
+        The result will be a hessian matrix.
+        The matrix is a 2x2 matrix [[A,B],[C,D]] so like
+        A B
+        C D
+        """
+    A = (delta_of_r(n + h, k, H_0_measured, freq, Material_parameter) - 2*delta_of_r(n, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h, k, H_0_measured, freq, Material_parameter))/h**2
+    # A = d²delta(r_p)/dn² = (delta(n + h, k) - 2*delta(n,k) - delta(n-h,k))/h²
+    B = (delta_of_r(n + h/2, k + h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n + h/2, k - h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n - h/2, k + h/2, H_0_measured, freq, Material_parameter) + delta_of_r(n - h/2, k - h/2, H_0_measured, freq, Material_parameter))/h**2
+    # B = d²delta(r_p)/dkdn = (delta(n + h/2, k + h/2) - delta(n + h/2, k - h/2) - delta(n - h/2, k + h/2)  + delta(n - h/2, k - h/2))/h²
+    C = B #Satz von Schwarz
+    D =  (delta_of_r(n, k + h, H_0_measured, freq, Material_parameter) - 2*delta_of_r(n, k, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h, H_0_measured, freq, Material_parameter))/h**2
+    # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
+    hessian_tot = np.array([[A[0],B[0]], [C[0],D[0]]])
     with open('build/testing/hessian.csv', 'w') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerows(hessian_tot)   
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerows(hessian_tot) 
     return hessian_tot
 
-def newton_r_p(r_p, delta): #newton iteration step to find the best value of r=(n_2,k_2)
-    with open('build/testing/delta.csv', 'w') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerows(delta)   
-    A = hessian(delta, r_p[0], r_p[1]) 
+def newton_r_p(r_p, H_0_measured, freq, Material_parameter, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
+    A = hessian(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) 
+    grad_ = grad(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h)
     with open('build/testing/gradient.csv', 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
-            csvwriter.writerows(np.reshape(np.gradient(delta), (2,9))) 
-    grad(delta,r_p[0][1], r_p[1][1])
-    print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(np.gradient(delta)), "The shape of the hessian ", np.shape(A))
-    r_p_1 = r_p - np.linalg.inv(A) * np.reshape(np.gradient(delta), (9,2))
+            csvwriter.writerow(grad_) 
+    #print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(grad_), "The shape of the hessian ", np.shape(A))
+    #print(np.linalg.inv(A).dot(grad_))
+    r_p_1 = r_p - np.linalg.inv(A).dot(grad_)
+    # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
+    #print(np.shape(r_p_1))   
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def Transfer_function(omega, n, k, l, fp):
@@ -142,6 +147,7 @@ def Transfer_function(omega, n, k, l, fp):
         FP = 1/(1 - ((1 - (n+1j*k))/(1 + (n + 1j*k)))**2 * np.exp(-2*1j * (n + 1j *k)* (omega*l/c)))
         return T*FP
     else:
+        print("No FP factor")
         return T
 
 def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2, k_3, l, fp):
@@ -166,6 +172,11 @@ def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2,
 
 d = 26*10**(-3) # thickness of the probe in SI
 n_air = 1
+n_slab = 1
+k_slab = 1
+
+Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
+
 #Read the excel file
 material_properties_ref = np.genfromtxt('data/teflon_1_material_properties.txt')
 data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
@@ -521,56 +532,32 @@ plt.legend()
 plt.savefig('build/testing/Transferfunction_n_1_5_k_1_5.pdf')
 plt.close()
 
-h = 0.0001
+n_0 = 2
+k_0 = 2
 
-n_0 = np.array([2 - h, 2, 2 + h])
-k_0 = np.array([2 - h, 2, 2 + h])
-
-T = np.zeros((len(n_0),len(k_0)), dtype='complex_')
 test_freq_index = 100
-for i in range(len(n_0)):
-    for l in range(len(k_0)):
-        T[i][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,n_0[i], n_air, n_air, k_0[l], n_air, d, True) # for testing we use the middle of the frequency
-print("shape pf T:", T.shape)
-with open('build/testing/transfer_calc.csv', 'w') as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerows(T)  
-
-
-
-plt.figure()
-delta = error_function(T, H_0_value[test_freq_index]) # shapes dont fit
-delta[np.isinf(delta)] = 0
-delta[np.isnan(delta)] = 0
-print("shape delta", delta.shape)
-# Plot the 3D surface
-ax = plt.figure().add_subplot(projection='3d')
-
-""" The surface plot does not look the way I would expect it too look.
-    I thought it would be a surface and not a line.
-    However, this could just be a bug in my code, as T is still 2 dimensional, as is delta"""
-ax.plot_surface(n_0, k_0, delta, edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
-                alpha=0.3)
-ax.set(xlim=(np.min(n_0), np.max(n_0)), ylim=(np.min(k_0), np.max(k_0)), zlim=(np.min(delta), np.max(delta)),
-       xlabel='n', ylabel='k', zlabel='delta')
-plt.grid()
-plt.title('delta')
-plt.savefig('build/Errorfunction.pdf')
-plt.close()
 
 ###################################################################################################################################
     # Minimizing with newton
 ###################################################################################################################################
-r_0 = [n_0,k_0] # r_p[0] = n, r_p[1] = k
+steps = 100000
+
+r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
-for i in range(100):
+r_p_1 = np.zeros((steps,2))
+for i in range(steps):
     print(i)
-    r_p = newton_r_p(r_p, delta) # r_p[0] = n, r_p[1] = k
-    for m in range(len(r_p[1,:])):
-        for l in range(len(r_p[0,:])):
-            T[m][l] = Transfer_function_three_slabs(freq_ref[test_freq_index], n_air ,r_p[0,m], n_air, n_air, r_p[1,l], n_air, d, True) 
-    delta = error_function(T, H_0_value[test_freq_index])
-print(r_p)
+    r_p_1[i] = newton_r_p(r_p, H_0_value[test_freq_index], freq_ref[test_freq_index], Material, h = 0.1) # r_p[0] = n, r_p[1] = k
+    r_p = r_p_1[i]
+    print(r_p)
+
+plt.figure
+plt.plot(np.linspace(0,steps, steps), r_p_1[:,0], label='n')
+plt.plot(np.linspace(0,steps, steps), r_p_1[:,1], label='k')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/convergence_tes.pdf')
+plt.close()
 
 """Things that dont work:
     - Transferfunction gives weird values and is divergent for some inputs
