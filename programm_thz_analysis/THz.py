@@ -82,10 +82,12 @@ def delta_of_r(n, k, H_0_measured, freq, Material_parameter): #if needed n_1,n_3
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, False)
     angle_mes = np.angle(H_0_measured)  
     phase_mes = np.unwrap([angle_mes])  
+    #if(H_0_calc <= 0):
+    #    print(H_0_calc, " n ", n, " k ", k)
     delta_rho = np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap([angle_0])  #phase 
-    delta_phi = phase_0 - phase_mes
+    delta_phi = (phase_0 - phase_mes)
     #print("Shape delta: ", np.shape(delta_phi**2 + delta_rho**2))
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
@@ -99,9 +101,9 @@ def grad(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
         A
         B
     """
-    A = (delta_of_r(n + h/2, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h/2, k, H_0_measured, freq, Material_parameter))/h
+    A = (delta_of_r(n + h, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h, k, H_0_measured, freq, Material_parameter))/2*h
     # A = delta(r_p)/dn = (delta(n + h/2, k) - delta(n - h/2, k)) / h
-    B = (delta_of_r(n, k + h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h/2, H_0_measured, freq, Material_parameter))/h 
+    B = (delta_of_r(n, k + h, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h, H_0_measured, freq, Material_parameter))/2*h 
     grad_ = np.array([A[0], B[0]])
     return grad_
 
@@ -135,6 +137,17 @@ def newton_r_p(r_p, H_0_measured, freq, Material_parameter, h=10**(-6)): #newton
     #print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(grad_), "The shape of the hessian ", np.shape(A))
     #print(np.linalg.inv(A).dot(grad_))
     r_p_1 = r_p - np.linalg.inv(A).dot(grad_)
+    F_old = r_p - np.linalg.inv(A).dot(grad_) 
+    F_new = r_p_1 - np.linalg.inv(hessian(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h)).dot(grad(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h))
+    lambda_ = 0.95
+    while(np.abs(F_old).dot(np.abs(F_old)) < np.abs(F_new).dot(np.abs(F_new))):
+        #print("sus der Gradient ist größer geworden", end="\r")
+        r_p_1 = r_p - lambda_ * (np.linalg.inv(A).dot(grad_))
+        F_new = r_p_1 - np.linalg.inv(hessian(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h)).dot(grad(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h))
+        lambda_ = lambda_ - 0.05
+        if(lambda_ <= 0.1):
+            break
+
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     #print(np.shape(r_p_1))   
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
@@ -154,9 +167,9 @@ def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2,
     n_1 = n_1_real + 1j*k_1
     n_2 = n_2_real + 1j*k_2 
     n_3 = n_3_real + 1j*k_3
-    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp(-1j*(n_2 - n_air) * omega*l/c)
+    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp(-(1j*n_2 - 1j*n_3) * omega*l/c)
     if(fp):
-        FP = 1/(1 - ((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * omega*l/c))
+        FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * omega*l/c)))
         return T*FP
     else:
         return T
@@ -170,7 +183,7 @@ def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2,
 
 # The thickness of the probe
 
-d = 26*10**(-3) # thickness of the probe in SI
+d = 0.26*10**(-3) # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -532,32 +545,47 @@ plt.legend()
 plt.savefig('build/testing/Transferfunction_n_1_5_k_1_5.pdf')
 plt.close()
 
-n_0 = 2
-k_0 = 2
+n_0 = 1
+k_0 = 1
 
-test_freq_index = 100
+test_freq_index = 20
 
 ###################################################################################################################################
     # Minimizing with newton
 ###################################################################################################################################
-steps = 100000
+steps = 50000
 
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
 r_p_1 = np.zeros((steps,2))
-for i in range(steps):
-    print(i)
-    r_p_1[i] = newton_r_p(r_p, H_0_value[test_freq_index], freq_ref[test_freq_index], Material, h = 0.1) # r_p[0] = n, r_p[1] = k
+i = 1
+h = 0.1
+Transfer_function_values = np.zeros(steps)
+for l in range(steps - 1):
+    r_p_1[i] = newton_r_p(r_p, H_0_value[test_freq_index], freq_ref[test_freq_index], Material, h = h) # r_p[0] = n, r_p[1] = k
+    Transfer_function_values[i] = np.abs(Transfer_function_three_slabs(freq_ref[test_freq_index], Material.n_1, r_p[0], Material.n_3, Material.k_1, r_p[1], Material.k_3, Material.d, fp=False))**2
+    if(r_p_1[i][0] == r_p_1[i - 1][0] or r_p_1[i][1] == r_p_1[i -1][1]): # if the algorythm brakes we go back two steps and try again with smaller h
+        h = h/10
+        i = i - 2
     r_p = r_p_1[i]
-    print(r_p)
+    print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
+    i = i + 1 
 
 plt.figure
-plt.plot(np.linspace(0,steps, steps), r_p_1[:,0], label='n')
-plt.plot(np.linspace(0,steps, steps), r_p_1[:,1], label='k')
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,0], label='n')
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,1], label='k')
 plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
 plt.legend()
 plt.savefig('build/testing/convergence_tes.pdf')
 plt.close()
+
+plt.figure
+plt.plot(np.linspace(1,steps, steps), Transfer_function_values, label='T')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/Transferfunction_test.pdf')
+plt.close()
+
 
 """Things that dont work:
     - Transferfunction gives weird values and is divergent for some inputs
