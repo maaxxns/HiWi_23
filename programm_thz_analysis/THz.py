@@ -78,7 +78,10 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
     print(delta_phi.shape, ' ', delta_rho.shape)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
-def delta_of_r(n, k, H_0_measured, freq, Material_parameter): #if needed n_1,n_3 and k_1, k_3 can also be added
+def delta_of_r(n, k, H_0_measured, freq, Material_parameter):
+    """ delta is the error between the estimated Transferfunction 
+    and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
+    """ #if needed n_1,n_3 and k_1, k_3 can also be added 
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, False)
     angle_mes = np.angle(H_0_measured)  
     phase_mes = np.unwrap([angle_mes])  
@@ -89,11 +92,18 @@ def delta_of_r(n, k, H_0_measured, freq, Material_parameter): #if needed n_1,n_3
     phase_0 = np.unwrap([angle_0])  #phase 
     delta_phi = (phase_0 - phase_mes)
     #print("Shape delta: ", np.shape(delta_phi**2 + delta_rho**2))
-    return delta_phi**2 + delta_rho**2 # this should be minimized in the process
+    return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
 
 
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
+
+def grad_2D(func, r, params=None, h = 10**(-6)):
+    
+    grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
+    grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
+
+    return [grad_0_x, grad_0_y]
 
 def grad(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
     """ This function calculates the gradient of the delta(r_p) function.
@@ -129,9 +139,9 @@ def hessian(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
     return hessian_tot
 
 def newton_r_p(r_p, H_0_measured, freq, Material_parameter, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
-    A = hessian(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) 
-    grad_ = grad(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h)
-    with open('build/testing/gradient.csv', 'w') as csvfile:
+    A = hessian(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) # Calculate the hessian matrix of delta(r_p)
+    grad_ = grad(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) # calculate the gradient of delta(r_p)
+    with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(grad_) 
     #print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(grad_), "The shape of the hessian ", np.shape(A))
@@ -149,7 +159,19 @@ def newton_r_p(r_p, H_0_measured, freq, Material_parameter, h=10**(-6)): #newton
             break
 
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
-    #print(np.shape(r_p_1))   
+    #print(np.shape(r_p_1)) """  
+    return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
+
+def newton_r_p_zero_finder(func, r_p, parameter = None, h=10**(-6)): #newton iteration step to find zero crossing 
+    grad_ = grad_2D(func = func, r = r_p, params = parameter, h = h) # calculate the gradient of func(r_p)
+    if isinstance(grad_[0], complex) or isinstance(grad_[1], complex):
+        print("complex grad")
+    with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(grad_) 
+
+    r_p_1 = r_p - func(r_p, parameter)/grad_
+
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def Transfer_function(omega, n, k, l, fp):
@@ -542,28 +564,66 @@ plt.figure()
 plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).real, label='Transferfunction real part')
 plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).imag, label='Transferfunction imag part')
 plt.legend()
-plt.savefig('build/testing/Transferfunction_n_1_5_k_1_5.pdf')
+plt.savefig('build/testing/Transferfunction_n_2_k_2.pdf')
 plt.close()
 
-n_0 = 1
-k_0 = 1
+n_0 = 2
+k_0 = 2
 
 test_freq_index = 20
 
 ###################################################################################################################################
-    # Minimizing with newton
+    # Finding the zero crossing of the f(r_p, omega) = T_calc - T_meas with newton
 ###################################################################################################################################
-steps = 50000
+"""
+steps = 10
+r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
+r_p = r_0 # set the start value
+r_p_1 = np.zeros((steps,2), dtype=complex)
+r_p_1[0] = r_p
+i = 1
+h = 0.5
+delta_values = np.zeros(steps)
+
+n_1 = 1
+n_3 = 1
+k_1 = 1
+k_3 = 1
+fp = True
+params = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+
+def f(r_p, params): # we try to find zero of this function
+    print(r_p)
+    print(Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index])
+    return Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+
+for l in range(steps - 1):
+    r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params, h=h)
+    r_p = r_p_1[i]
+    delta_values[i] = delta_of_r(r_p[0], r_p[1], H_0_value[test_freq_index], freq_ref[test_freq_index], Material)
+    print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
+    i = i + 1 
+""""""
+    - Why is it that whenever I try to calculate the Transferfunction it gives back a nan?
+    - Why is it that the r_p becomes complex at some point and at that point the Transferfunction also becomes nan?
+    - Another problem lies within the result that the Transferfunction is complex, but r_p should be complex
+"""
+
+###################################################################################################################################
+    # Minimizing the delta function with newton 
+###################################################################################################################################
+
+steps = 7000
 
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
 r_p_1 = np.zeros((steps,2))
 i = 1
-h = 0.1
-Transfer_function_values = np.zeros(steps)
+h = 0.5
+delta_values = np.zeros(steps)
 for l in range(steps - 1):
     r_p_1[i] = newton_r_p(r_p, H_0_value[test_freq_index], freq_ref[test_freq_index], Material, h = h) # r_p[0] = n, r_p[1] = k
-    Transfer_function_values[i] = np.abs(Transfer_function_three_slabs(freq_ref[test_freq_index], Material.n_1, r_p[0], Material.n_3, Material.k_1, r_p[1], Material.k_3, Material.d, fp=False))**2
+    delta_values[i] = delta_of_r(r_p[0], r_p[1], H_0_value[test_freq_index], freq_ref[test_freq_index], Material)
     if(r_p_1[i][0] == r_p_1[i - 1][0] or r_p_1[i][1] == r_p_1[i -1][1]): # if the algorythm brakes we go back two steps and try again with smaller h
         h = h/10
         i = i - 2
@@ -580,18 +640,15 @@ plt.savefig('build/testing/convergence_tes.pdf')
 plt.close()
 
 plt.figure
-plt.plot(np.linspace(1,steps, steps), Transfer_function_values, label='T')
+plt.plot(np.linspace(1,steps, steps - 1), delta_values[1:], label=r'$\delta$')
 plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
 plt.legend()
-plt.savefig('build/testing/Transferfunction_test.pdf')
+plt.savefig('build/testing/delta_function.pdf')
 plt.close()
 
 
 """Things that dont work:
     - Transferfunction gives weird values and is divergent for some inputs
-    - Delta plot should look like a paraboloid, however it is just a parabel. So one dimension is missing
-    - I have no idea how to calculate the matrix A that is necessary for the newton raphson methode
-        it should be the hessian matrix of the taylor expansion of delta.
-        However, I dont know how to calculate neither the taylor expansion of delta nor the hessian matrix as my function is basically just a matrix.
-        I could try to take the numerical gradient of the matrox two times, but that does not feel right, as I also could just search the array for the lowest number or not?
-    - If I would know how to calculate A the progamm is basically done"""
+    - From my understanding we try to find the postion where T_calc - T_measured = 0. But because this oscillates we use the delta function, which we then need to minimize.
+        However the minimization seems to not work somehow. As its seems to be very dependent on the staring values, even though the paper suggests that its not
+    - My minimizer is not minimizing? atleast the delta function is not getting smaller through iteration    """
