@@ -5,6 +5,7 @@ THzPhase.pdf: THz.py | build
 
 build:
 	mkdir -p build
+	mkdir -p build/testing
 
 clean:
 	rm -r build

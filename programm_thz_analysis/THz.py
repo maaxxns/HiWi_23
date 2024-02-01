@@ -78,7 +78,12 @@ def error_function(H_0_calc, H_0_measured): # The error function needs to be min
     print(delta_phi.shape, ' ', delta_rho.shape)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process
 
-def delta_of_r(n, k, H_0_measured, freq, Material_parameter):
+def delta_of_r(r, params):
+    n = r[0]
+    k = r[1]
+    H_0_measured = params[0]
+    freq = params[1]
+    Material_parameter = params[2]
     """ delta is the error between the estimated Transferfunction 
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1,n_3 and k_1, k_3 can also be added 
@@ -98,68 +103,29 @@ def delta_of_r(n, k, H_0_measured, freq, Material_parameter):
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)
 
-def grad_2D(func, r, params=None, h = 10**(-6)):
-    
+def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
+    return [grad_0_x[0], grad_0_y[0]]
 
-    return [grad_0_x, grad_0_y]
-
-def grad(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
-    """ This function calculates the gradient of the delta(r_p) function.
-        The result will be a vector of dim 2 [A, B] so like
-        A
-        B
-    """
-    A = (delta_of_r(n + h, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h, k, H_0_measured, freq, Material_parameter))/2*h
-    # A = delta(r_p)/dn = (delta(n + h/2, k) - delta(n - h/2, k)) / h
-    B = (delta_of_r(n, k + h, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h, H_0_measured, freq, Material_parameter))/2*h 
-    grad_ = np.array([A[0], B[0]])
-    return grad_
-
-
-def hessian(n, k, H_0_measured, freq, Material_parameter, h = 10**(-6)):
-    """ This function calculates the second derivitave of delta(r_p).
-        The result will be a hessian matrix.
-        The matrix is a 2x2 matrix [[A,B],[C,D]] so like
-        A B
-        C D
-        """
-    A = (delta_of_r(n + h, k, H_0_measured, freq, Material_parameter) - 2*delta_of_r(n, k, H_0_measured, freq, Material_parameter) - delta_of_r(n - h, k, H_0_measured, freq, Material_parameter))/h**2
+def Hessematrix(func, r, params=None, h = 10**(-6)):  
+    A = (func([r[0] + h, r[1]], params) - 2*func([r[0], r[1]], params) - func([r[0] - h, r[1]], params))/h**2
+    B = (func([r[0] + h/2, r[1] + h/2], params) - func([r[0] + h/2, r[1] - h/2], params) - func([r[0] - h/2, r[1] + h/2], params) + func([r[0] - h/2, r[1] - h/2], params))/h**2
+    C = B
+    D = (func([r[0], r[1] + h], params) - 2*func([r[0], r[1]], params) - func([r[0], r[1] - h], params))/h**2
     # A = d²delta(r_p)/dn² = (delta(n + h, k) - 2*delta(n,k) - delta(n-h,k))/h²
-    B = (delta_of_r(n + h/2, k + h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n + h/2, k - h/2, H_0_measured, freq, Material_parameter) - delta_of_r(n - h/2, k + h/2, H_0_measured, freq, Material_parameter) + delta_of_r(n - h/2, k - h/2, H_0_measured, freq, Material_parameter))/h**2
     # B = d²delta(r_p)/dkdn = (delta(n + h/2, k + h/2) - delta(n + h/2, k - h/2) - delta(n - h/2, k + h/2)  + delta(n - h/2, k - h/2))/h²
-    C = B #Satz von Schwarz
-    D =  (delta_of_r(n, k + h, H_0_measured, freq, Material_parameter) - 2*delta_of_r(n, k, H_0_measured, freq, Material_parameter) - delta_of_r(n, k - h, H_0_measured, freq, Material_parameter))/h**2
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
-    hessian_tot = np.array([[A[0],B[0]], [C[0],D[0]]])
-    with open('build/testing/hessian.csv', 'w') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerows(hessian_tot) 
-    return hessian_tot
+    return np.array([[A[0],B[0]], [C[0],D[0]]])
 
-def newton_r_p(r_p, H_0_measured, freq, Material_parameter, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
-    A = hessian(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) # Calculate the hessian matrix of delta(r_p)
-    grad_ = grad(r_p[0], r_p[1], H_0_measured, freq, Material_parameter, h) # calculate the gradient of delta(r_p)
+def newton_r_p(r_p, params, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
+    A = Hessematrix(delta_of_r, r_p, params, h) # Calculate the hessian matrix of delta(r_p)
+    grad_ = grad_2D(delta_of_r,r_p, params, h) # calculate the gradient of delta(r_p)
     with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(grad_) 
-    #print("The shape of r_p ", np.shape(r_p),"The shape of the gradient ",np.shape(grad_), "The shape of the hessian ", np.shape(A))
-    #print(np.linalg.inv(A).dot(grad_))
     r_p_1 = r_p - np.linalg.inv(A).dot(grad_)
-    F_old = r_p - np.linalg.inv(A).dot(grad_) 
-    F_new = r_p_1 - np.linalg.inv(hessian(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h)).dot(grad(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h))
-    lambda_ = 0.95
-    while(np.abs(F_old).dot(np.abs(F_old)) < np.abs(F_new).dot(np.abs(F_new))):
-        #print("sus der Gradient ist größer geworden", end="\r")
-        r_p_1 = r_p - lambda_ * (np.linalg.inv(A).dot(grad_))
-        F_new = r_p_1 - np.linalg.inv(hessian(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h)).dot(grad(r_p_1[0], r_p_1[1], H_0_measured, freq, Material_parameter, h))
-        lambda_ = lambda_ - 0.05
-        if(lambda_ <= 0.1):
-            break
-
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
-    #print(np.shape(r_p_1)) """  
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def newton_r_p_zero_finder(func, r_p, parameter = None, h=10**(-6)): #newton iteration step to find zero crossing 
@@ -567,15 +533,32 @@ plt.legend()
 plt.savefig('build/testing/Transferfunction_n_2_k_2.pdf')
 plt.close()
 
+test_n = np.linspace(0,10, 1000)
+test_k = np.linspace(0,10, 1000)
+
+test_freq_index = 20
+
+plt.figure()
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 1, 2, 1, d, True).real, label='Transferfunction n real part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 1, 2, 1, d, True).imag, label='Transferfunction n complex part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 1, test_k, 1, d, True).real, label='Transferfunction k real part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 1, test_k, 1, d, True).imag, label='Transferfunction k complex part')
+
+plt.legend()
+plt.title("Transferfunction at set frequency but different n and k")
+plt.savefig('build/testing/Transferfunction_n_k.pdf')
+plt.close()
+
+
+
 n_0 = 2
 k_0 = 2
 
-test_freq_index = 20
 
 ###################################################################################################################################
     # Finding the zero crossing of the f(r_p, omega) = T_calc - T_meas with newton
 ###################################################################################################################################
-"""
+
 steps = 10
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
@@ -590,20 +573,23 @@ n_3 = 1
 k_1 = 1
 k_3 = 1
 fp = True
-params = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
-
+params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
+""""
 def f(r_p, params): # we try to find zero of this function
     print(r_p)
     print(Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index])
     return Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
 
 for l in range(steps - 1):
-    r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params, h=h)
+    r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params_Transferfunction, h=h)
     r_p = r_p_1[i]
-    delta_values[i] = delta_of_r(r_p[0], r_p[1], H_0_value[test_freq_index], freq_ref[test_freq_index], Material)
+    delta_values[i] = delta_of_r(r_p, params_delta_function)
     print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
     i = i + 1 
-""""""
+"""
+
+"""
     - Why is it that whenever I try to calculate the Transferfunction it gives back a nan?
     - Why is it that the r_p becomes complex at some point and at that point the Transferfunction also becomes nan?
     - Another problem lies within the result that the Transferfunction is complex, but r_p should be complex
@@ -619,11 +605,11 @@ r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
 r_p_1 = np.zeros((steps,2))
 i = 1
-h = 0.5
+h = 1
 delta_values = np.zeros(steps)
 for l in range(steps - 1):
-    r_p_1[i] = newton_r_p(r_p, H_0_value[test_freq_index], freq_ref[test_freq_index], Material, h = h) # r_p[0] = n, r_p[1] = k
-    delta_values[i] = delta_of_r(r_p[0], r_p[1], H_0_value[test_freq_index], freq_ref[test_freq_index], Material)
+    r_p_1[i] = newton_r_p(r_p, params_delta_function, h = h) # r_p[0] = n, r_p[1] = k
+    delta_values[i] = delta_of_r(r_p, params_delta_function)
     if(r_p_1[i][0] == r_p_1[i - 1][0] or r_p_1[i][1] == r_p_1[i -1][1]): # if the algorythm brakes we go back two steps and try again with smaller h
         h = h/10
         i = i - 2
