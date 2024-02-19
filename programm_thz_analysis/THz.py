@@ -105,8 +105,11 @@ def paraboilid(r, A, b, c): # do I need this function?
 
 def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
-    grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
-    return [grad_0_x[0], grad_0_y[0]]
+    grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h
+    if isinstance(grad_0_x, complex) or isinstance(grad_0_y, complex):
+        return [grad_0_x, grad_0_x]
+    else:
+        return [grad_0_x[0], grad_0_y[0]]
 
 def Hessematrix(func, r, params=None, h = 10**(-6)):  
     A = (func([r[0] + h, r[1]], params) - 2*func([r[0], r[1]], params) - func([r[0] - h, r[1]], params))/h**2
@@ -118,13 +121,13 @@ def Hessematrix(func, r, params=None, h = 10**(-6)):
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
     return np.array([[A[0],B[0]], [C[0],D[0]]])
 
-def newton_r_p(r_p, params, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
+def newton_r_p(r_p, params, h=10**(-6)): #newton iteration step to find the best value of r_p=(n_2,k_2)  
     A = Hessematrix(delta_of_r, r_p, params, h) # Calculate the hessian matrix of delta(r_p)
     grad_ = grad_2D(delta_of_r,r_p, params, h) # calculate the gradient of delta(r_p)
     with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(grad_) 
-    r_p_1 = r_p - np.linalg.inv(A).dot(grad_)
+    r_p_1 = r_p - (np.linalg.inv(A)).dot((grad_)) # maybe with a norm? but that shouldnt be the issue
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
@@ -136,9 +139,22 @@ def newton_r_p_zero_finder(func, r_p, parameter = None, h=10**(-6)): #newton ite
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(grad_) 
 
-    r_p_1 = r_p - func(r_p, parameter)/grad_
+    r_p_1 = r_p - func(r_p, parameter)/grad_ # i think here lies one of the issues as the gradient is obviously a vector but the function a scalar, and I cant divide by a vector.
+    if isinstance(r_p_1, complex):
+        return [r_p_1.real, r_p_1.imag]
+    else: 
+        return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
-    return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
+""" 
+    complex newton raphson:
+    z = x + iy 
+    f(z) = u(x,y) + iv(x,y)
+    b(x,y) = |f(z))| = sqrt(u^2 + v^2)
+    vec(x) = [x , y]
+    vec(x_1) = vec(x_0) - b(x_0, y_0)/|-grad(b(x_0, y_0))|^2 * -grad(b(x_0, y_0))
+
+"""
+
 
 def Transfer_function(omega, n, k, l, fp):
     T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))
@@ -551,21 +567,21 @@ plt.close()
 
 
 
-n_0 = 2
-k_0 = 2
+n_0 = 1.5
+k_0 = 1.5
 
 
 ###################################################################################################################################
     # Finding the zero crossing of the f(r_p, omega) = T_calc - T_meas with newton
 ###################################################################################################################################
 
-steps = 10
+steps = 7000
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
-r_p_1 = np.zeros((steps,2), dtype=complex)
+r_p_1 = np.zeros((steps,2))
 r_p_1[0] = r_p
 i = 1
-h = 0.5
+h = 0.01
 delta_values = np.zeros(steps)
 
 n_1 = 1
@@ -575,11 +591,12 @@ k_3 = 1
 fp = True
 params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
 params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
-""""
+
 def f(r_p, params): # we try to find zero of this function
-    print(r_p)
-    print(Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index])
-    return Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+    #print(r_p)
+    T_T = Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+    print(T_T)
+    return T_T
 
 for l in range(steps - 1):
     r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params_Transferfunction, h=h)
@@ -587,7 +604,23 @@ for l in range(steps - 1):
     delta_values[i] = delta_of_r(r_p, params_delta_function)
     print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
     i = i + 1 
-"""
+
+plt.figure
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,0], label='n')
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,1], label='k')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/convergence_tes_minimizing_T_minus_T.pdf')
+plt.close()
+
+plt.figure
+plt.plot(np.linspace(1,steps, steps - 1), delta_values[1:], label=r'$\delta$')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/delta_function_minimizing_T_minus_T.pdf')
+plt.close()
+
+
 
 """
     - Why is it that whenever I try to calculate the Transferfunction it gives back a nan?
@@ -600,13 +633,30 @@ for l in range(steps - 1):
 ###################################################################################################################################
 
 steps = 7000
-
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
+r_p_1 = np.zeros((steps,2), dtype=complex)
+r_p_1[0] = r_p
+i = 1
+h = 0.01
+delta_values = np.zeros(steps)
+
+n_1 = 1
+n_3 = 1
+k_1 = 1
+k_3 = 1
+fp = True
+params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
+
+
+r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p_1 = np.zeros((steps,2))
+r_p_1[0] = r_0 # set the start value
+r_p = r_0 # set the start value
 i = 1
 h = 1
-delta_values = np.zeros(steps)
+delta_values = np.zeros((steps,2))
 for l in range(steps - 1):
     r_p_1[i] = newton_r_p(r_p, params_delta_function, h = h) # r_p[0] = n, r_p[1] = k
     delta_values[i] = delta_of_r(r_p, params_delta_function)
