@@ -416,13 +416,13 @@ k_0 = 0.5
     # Finding the zero crossing of the f(r_p, omega) = T_calc - T_meas with newton
 ###################################################################################################################################
 
-steps = 10
+steps = 7000
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
-r_p_1 = np.zeros((steps,2), dtype=complex)
+r_p_1 = np.zeros((steps,2))
 r_p_1[0] = r_p
 i = 1
-h = 0.5
+h = 0.01
 delta_values = np.zeros(steps)
 
 n_1 = 1
@@ -432,11 +432,12 @@ k_3 = 1
 fp = True
 params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
 params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
-""""
+
 def f(r_p, params): # we try to find zero of this function
-    print(r_p)
-    print(Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index])
-    return Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+    #print(r_p)
+    T_T = Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+    print(T_T)
+    return T_T
 
 for l in range(steps - 1):
     r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params_Transferfunction, h=h)
@@ -444,7 +445,23 @@ for l in range(steps - 1):
     delta_values[i] = delta_of_r(r_p, params_delta_function)
     print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
     i = i + 1 
-"""
+
+plt.figure
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,0], label='n')
+plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,1], label='k')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/convergence_tes_minimizing_T_minus_T.pdf')
+plt.close()
+
+plt.figure
+plt.plot(np.linspace(1,steps, steps - 1), delta_values[1:], label=r'$\delta$')
+plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+plt.legend()
+plt.savefig('build/testing/delta_function_minimizing_T_minus_T.pdf')
+plt.close()
+
+
 
 """
     - Why is it that whenever I try to calculate the Transferfunction it gives back a nan?
@@ -460,7 +477,25 @@ steps = 20000
 
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p = r_0 # set the start value
+r_p_1 = np.zeros((steps,2), dtype=complex)
+r_p_1[0] = r_p
+i = 1
+h = 0.01
+delta_values = np.zeros(steps)
+
+n_1 = 1
+n_3 = 1
+k_1 = 1
+k_3 = 1
+fp = True
+params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
+
+
+r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_p_1 = np.zeros((steps,2))
+r_p_1[0] = r_0 # set the start value
+r_p = r_0 # set the start value
 i = 1
 h = 0.1
 delta_values = np.zeros(steps)
