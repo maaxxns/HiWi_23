@@ -4,7 +4,7 @@ import csv
 def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
-    return [grad_0_x[0], grad_0_y[0]]
+    return [grad_0_x, grad_0_y]
 
 def Hessematrix(func, r, params=None, h = 10**(-6)):  
     A = (func([r[0] + h, r[1]], params) - 2*func([r[0], r[1]], params) - func([r[0] - h, r[1]], params))/h**2
@@ -23,7 +23,13 @@ def newton_r_p_zero_finder(func, r, parameter = None, h=10**(-6)): #newton itera
     with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(grad_) 
+    print(func(r, parameter))
 
+    # just for debugging #################
+
+    grad_ = 1 ###
+  
+  
     r_p_1 = r - func(r, parameter)/grad_
 
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 

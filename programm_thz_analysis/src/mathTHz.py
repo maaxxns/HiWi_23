@@ -70,17 +70,17 @@ def delta_of_r(r, params):
     """ delta is the error between the estimated Transferfunction 
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1,n_3 and k_1, k_3 can also be added 
-    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, False)
+    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, True)
     angle_mes = np.angle(H_0_measured)  
     phase_mes = np.unwrap([angle_mes])  
     #if(H_0_calc <= 0):
     #    print(H_0_calc, " n ", n, " k ", k)
-    delta_rho = np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))
+    delta_rho = [np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))]
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap([angle_0])  #phase 
     delta_phi = (phase_0 - phase_mes)
     #print("Shape delta: ", np.shape(delta_phi**2 + delta_rho**2))
-    return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
+    return delta_phi[0]**2 + delta_rho[0]**2 # this should be minimized in the process or best even be zero 
 
 def paraboilid(r, A, b, c): # do I need this function?
     return (1/2 * r * A * r - b * r + c)

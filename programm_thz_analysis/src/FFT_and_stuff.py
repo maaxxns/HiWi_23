@@ -32,7 +32,7 @@ for fft_data in fft_datas: # plot FFT
     plt.figure()
     plt.xlim(0, 2)
     plt.plot(fft_data[1][0], np.abs(fft_data[1][1]), label='FFT of ' + fft_data[0]) #not sure if the absolut of the FFT here is correct
-    plt.ylabel('Intensity')
+    plt.ylabel('Intensity / V')
     plt.xlabel(r'$f / THz$')
     plt.legend()
     plt.savefig('build/FFTs/FFT_of_' + fft_data[0] + '.pdf')

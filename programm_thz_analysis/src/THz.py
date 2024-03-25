@@ -34,9 +34,9 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 #Read the excel file
-material_properties_ref = np.genfromtxt('../data/teflon_1_material_properties.txt')
-data_sam = np.genfromtxt('../data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('../data/without_cryo_with_purge.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+material_properties_ref = np.genfromtxt('data/teflon_1_material_properties.txt')
+data_sam = np.genfromtxt('data/without_cryo_with_purge_teflon.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/without_cryo_with_purge.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 
 ###################################################################################################################################
@@ -232,7 +232,6 @@ plt.close()
 ###################################################################################################################################
 
 n_real = n(freq_ref, d, phase)
-#n_real_alt = n(freq_ref, d, phase_dif)
 n_im = k(freq_ref, d, H_0_value, n_real)
 
 ###################################################################################################################################
@@ -240,7 +239,6 @@ n_im = k(freq_ref, d, H_0_value, n_real)
 ###################################################################################################################################
 
 n_real_zero = n(freq_ref_zero, d, phase_zero)
-#n_real_alt = n(freq_ref, d, phase_dif)
 n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
 
 
@@ -367,13 +365,6 @@ plt.close()
     If I get that stuff right I move on to the whole frequency range."""
 
 print("-----------------------------------------------------------")
-
-""""Okay ich glaub was ich eigentlich machen muss ist ein startwert zu wählen.
-    Den nutze ich um eine Abweichung also delta zu berechnen.
-    Mit dem Wert mache ich zudem dann den Newton schritt.
-    Die Hesse Matrix berechne ich dabei an dem entsprechenden Punkt.
-    Jetzt ist die Frage nur noch wie ich die Hesse Matrix berechne """
-
 
 """ Die Transferfunktion gibt mir irgendwie keine sinnvollen werte zurück also plotte ich die erstmal für ein paar testwerte
     komischer weise scheint sie gegen hohe frequezen zu divergieren.
