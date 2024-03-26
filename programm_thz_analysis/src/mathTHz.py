@@ -79,7 +79,7 @@ def delta_of_r(r, params):
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap([angle_0])  #phase 
     delta_phi = (phase_0 - phase_mes)
-    print(delta_phi[0]**2 + delta_rho[0]**2)
+    #print(delta_phi[0]**2 + delta_rho[0]**2)
     return delta_phi[0]**2 + delta_rho[0]**2 # this should be minimized in the process or best even be zero 
 
 def Transfer_function(omega, n, k, l, fp):

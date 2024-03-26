@@ -396,40 +396,34 @@ plt.savefig('build/testing/Transferfunction_n_k.pdf')
 plt.close()
 
 
-###################################################################################################################################
-# Set starting values for the algorythm
-###################################################################################################################################
-n_0 = 5
-k_0 = 0.5
-
 
 ###################################################################################################################################
     # Finding the zero crossing of the f(r_p, omega) = T_calc - T_meas with newton
 ###################################################################################################################################
 
-steps = 7000
-r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
-r_p = r_0 # set the start value
-r_p_1 = np.zeros((steps,2))
-r_p_1[0] = r_p
-i = 1
-h = 0.01
-delta_values = np.zeros(steps)
+#steps = 7000
+#r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
+#r_p = r_0 # set the start value
+#r_p_1 = np.zeros((steps,2))
+#r_p_1[0] = r_p
+#i = 1
+#h = 0.01
+#delta_values = np.zeros(steps)
+#
+#n_1 = 1
+#n_3 = 1
+#k_1 = 1
+#k_3 = 1
+#fp = True
+#params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+#params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
 
-n_1 = 1
-n_3 = 1
-k_1 = 1
-k_3 = 1
-fp = True
-params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
-params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
-
-def f(r_p, params): # we try to find zero of this function
-    #print(r_p)
-    T_T = Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
-    print(T_T)
-    return T_T
-
+#def f(r_p, params): # we try to find zero of this function
+#    #print(r_p)
+#    T_T = Transfer_function_three_slabs(params[0], params[1] , r_p[0], params[2], params[3], r_p[1], params[4], params[5], params[6]) - H_0_value[test_freq_index]
+#    print(T_T)
+#    return T_T
+"""
 for l in range(steps - 1):
     r_p_1[i] = newton_r_p_zero_finder(f, r_p, parameter = params_Transferfunction, h=h)
     r_p = r_p_1[i]
@@ -452,7 +446,7 @@ plt.legend()
 plt.savefig('build/testing/delta_function_minimizing_T_minus_T.pdf')
 plt.close()
 
-
+"""
 
 """
     - Why is it that whenever I try to calculate the Transferfunction it gives back a nan?
@@ -464,57 +458,61 @@ plt.close()
     # Minimizing the delta function with newton 
 ###################################################################################################################################
 
-steps = 20000
+###################################################################################################################################
+# Set starting values for the algorythm
+###################################################################################################################################
 
-r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
-r_p = r_0 # set the start value
-r_p_1 = np.zeros((steps,2), dtype=complex)
-r_p_1[0] = r_p
-i = 1
-h = 0.01
-delta_values = np.zeros(steps)
+n_0 = 2
+k_0 = 2
+h = 0.065
+num_steps = 1000
 
-n_1 = 1
-n_3 = 1
-k_1 = 1
-k_3 = 1
-fp = True
-params_Transferfunction = [freq_ref[test_freq_index], n_1, n_3, k_1, k_3, d, fp]
+###################################################################################################################################
+steps = np.linspace(1, num_steps, num_steps, dtype=int)
 params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
-
-
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
-r_p_1 = np.zeros((steps,2))
-r_p_1[0] = r_0 # set the start value
-r_p = r_0 # set the start value
-i = 1
-h = 0.1
-delta_values = np.zeros(steps)
-for l in range(steps - 1):
-    r_p_1[i] = newton_minimizer(delta_of_r, r_p, params_delta_function, h = h) # r_p[0] = n, r_p[1] = k
-    delta_values[i] = delta_of_r(r_p, params_delta_function)
-    if(r_p_1[i][0] == r_p_1[i - 1][0] or r_p_1[i][1] == r_p_1[i -1][1]): # if the algorythm brakes we go back two steps and try again with smaller h
-        h = h/10
-        i = i - 2
-    r_p = r_p_1[i]
-    print(f"{l/steps * 100:.2f} % {r_p}", end="\r")
-    i = i + 1 
+r = [None]*(len(steps) + 1)
+ns = [None]*len(r)
+ks = [None]*len(r)
+ns[0] = r_0[0]
+ks[0] = r_0[1]
 
-plt.figure
-plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,0], label='n')
-plt.plot(np.linspace(1,steps - 2, steps - 3), r_p_1[1:steps-2,1], label='k')
-plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+r[0] = r_0
+epsilon = 10**-5
+i = 0
+print("starting values for Newton-Raphson: r =", r_0, ", h = ", h)
+for step in steps:
+    r[step] = newton_minimizer(delta_of_r, r[step - 1], params=params_delta_function, h = h) # why is the convergence of my newton linear?
+    ns[step] = r[step][0]
+    ks[step] = r[step][1]
+    i = i + 1
+    if(np.abs(r[step][0] - r[step-1][0]) < epsilon and np.abs(r[step][1] - r[step-1][1]) < epsilon):
+        break
+print("Done")
+print("Plotting...")
+x = np.linspace(0, i, i)
+plt.figure()
+plt.title('start value r_0 = ' + str(r_0))
+plt.plot(x, ns[:i], label='n')
+plt.plot(x, ks[:i], label='k')
 plt.legend()
-plt.savefig('build/testing/convergence_test.pdf')
-plt.close()
+plt.xlabel('steps')
+plt.ylabel('value')
+plt.savefig('build/testing/convergence.pdf')
 
-plt.figure
-plt.plot(np.linspace(1,steps, steps - 1), delta_values[1:], label=r'$\delta$')
-plt.title(label="Convergence of the parameters over " + str(steps) + " steps")
+delta = [None]*len(x)
+i = 0
+for i in range(len(steps)):
+    delta[i] = delta_of_r([ns[i], ks[i]], params_delta_function)
+
+
+
+plt.figure()
+plt.plot(x, delta, label='delta')
 plt.legend()
-plt.savefig('build/testing/delta_function.pdf')
-plt.close()
-
+plt.xlabel('steps')
+plt.ylabel('delta')
+plt.savefig('build/testing/delta.pdf')
 
 """Things that dont work:
     - Transferfunction gives weird values and is divergent for some inputs

@@ -28,9 +28,9 @@ Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_sl
 freq = np.linspace(1*10**10, 3*10**12, 1000) #test freq from 10 Ghz to 3 THz
 
 
-T = Transfer_function_three_slabs(freq, 1 , 2, 1, 1, 2, 1, d, True)
+T = Transfer_function_three_slabs(freq, 1 , 2.5, 1, 1, 2.5, 1, d, True)
 
-r_p = np.array([1.5,1.5])
+r_p = np.array([1,1])
 
 steps = np.linspace(1, 12000, 12000, dtype=int)
 params = [T[100], freq[100], Material]
