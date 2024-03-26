@@ -75,15 +75,12 @@ def delta_of_r(r, params):
     phase_mes = np.unwrap([angle_mes])  
     #if(H_0_calc <= 0):
     #    print(H_0_calc, " n ", n, " k ", k)
-    delta_rho = [np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))]
+    delta_rho = np.array([np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))])
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap([angle_0])  #phase 
     delta_phi = (phase_0 - phase_mes)
-    #print("Shape delta: ", np.shape(delta_phi**2 + delta_rho**2))
+    print(delta_phi[0]**2 + delta_rho[0]**2)
     return delta_phi[0]**2 + delta_rho[0]**2 # this should be minimized in the process or best even be zero 
-
-def paraboilid(r, A, b, c): # do I need this function?
-    return (1/2 * r * A * r - b * r + c)
 
 def Transfer_function(omega, n, k, l, fp):
     T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))
