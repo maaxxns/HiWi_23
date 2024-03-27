@@ -55,7 +55,7 @@ plt.figure()
 plt.plot(data_ref[:,0]*10**(12), data_ref[:,1], label='Reference')
 #plt.vlines(data_ref[peaks_inref,0]*10**12, ymin=0, ymax=-10)
 plt.plot(data_sam[:,0]*10**(12) + 100, data_sam[:,1], label='Sample moved by +100ps')
-plt.xlabel(r_per_step'$ t/ps $')
+plt.xlabel(r'$ t/ps $')
 plt.ylabel('Amplitude')
 plt.legend()
 plt.grid()
@@ -93,7 +93,7 @@ plt.figure()
 plt.plot(data_ref_zero[0]*10**(12), data_ref_zero[1], label='Reference')
 #plt.vlines(data_ref[peaks_inref,0]*10**12, ymin=0, ymax=-10)
 plt.plot(data_sam_zero[0]*10**(12) + 100, data_sam_zero[1], label='Sample moved by +100ps')
-plt.xlabel(r_per_step'$ t/ps $')
+plt.xlabel(r'$ t/ps $')
 plt.ylabel('Amplitude')
 plt.legend()
 plt.grid()
@@ -150,7 +150,7 @@ freq_sam_zero = freq_sam_zero[mask1_zero]
 plt.figure()
 plt.plot(freq_ref* 10**(-12), np.abs(amp_ref), label='Reference FFT') # plot in Thz
 plt.plot(freq_sam* 10**(-12), np.abs(amp_sam), label='Sample FFT')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('Spectral Amplitude')
 plt.legend()
 plt.grid()
@@ -165,7 +165,7 @@ plt.close()
 plt.figure()
 plt.plot(freq_ref_zero* 10**(-12), np.abs(amp_ref_zero), label='Reference FFT') # plot in Thz
 plt.plot(freq_sam_zero* 10**(-12), np.abs(amp_sam_zero), label='Sample FFT')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('Spectral Amplitude')
 plt.legend()
 plt.grid()
@@ -192,8 +192,8 @@ plt.figure()
 #plt.plot(freq_ref*10**(-12),phase_dif, label='phase differenz')
 plt.plot(freq_ref*10**(-12),angle, label='angle directly from H_0')
 #plt.plot(data_ref[:,0], filter_ref)
-plt.xlabel(r_per_step'$ \omega/THz $')
-plt.ylabel(r_per_step'$\Phi$')
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel(r'$\Phi$')
 plt.legend()
 plt.grid()
 plt.title('The phase unwarpped')
@@ -218,8 +218,8 @@ plt.figure()
 #plt.plot(freq_ref_zero*10**(-12),angle_zero, label='angle')
 plt.plot(freq_ref_zero*10**(-12),phase_zero, label='phase directly from H_0')
 #plt.plot(data_ref[:,0], filter_ref)
-plt.xlabel(r_per_step'$ \omega/THz $')
-plt.ylabel(r_per_step'$\Phi$')
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel(r'$\Phi$')
 plt.legend()
 plt.grid()
 plt.title('The phase unwarpped of the zero padded data of silicon')
@@ -250,7 +250,7 @@ plt.figure()
 #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
 plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
 plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 4.5)
 plt.ylim(0,2)
@@ -268,7 +268,7 @@ plt.figure()
 #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
 plt.plot(freq_ref_zero*10**(-12), n_real_zero, label='real part of refractive index')
 plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('n (arb.)')
 plt.xlim(0.18, 4.5)
 #plt.ylim(0,4)
@@ -286,7 +286,7 @@ plt.close()
 plt.figure()
 #plt.plot(freq_ref*10**(-12), k(freq_ref, d, H_0_value, n_real_alt), label='complex part of refractive index by alt')
 plt.plot(freq_ref*10**(-12), n_im, label='complex part of refractive index')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('k (arb.)')
 plt.xlim(0.18, 4.5)
 #plt.ylim(0,2000)
@@ -303,7 +303,7 @@ plt.close()
 plt.figure()
 #plt.plot(freq_ref*10**(-12), k(freq_ref, d, H_0_value, n_real_alt), label='complex part of refractive index by alt')
 plt.plot(freq_ref_zero*10**(-12), n_im_zero, label='complex part of refractive index')
-plt.xlabel(r_per_step'$ \omega/THz $')
+plt.xlabel(r'$ \omega/THz $')
 plt.ylabel('k (arb.)')
 plt.xlim(0.18, 4.5)
 #plt.ylim(0,2000)
@@ -323,8 +323,8 @@ plt.figure()
 plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
 plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c='k', label='refference k from PCA program')
 #plt.plot(data_ref[:,0], filter_ref)
-plt.xlabel(r_per_step'$ \omega/THz $')
-plt.ylabel(r_per_step'$\alpha$')
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel(r'$\alpha$')
 plt.xlim(0.18, 4.5)
 #plt.ylim(0, 500)
 plt.legend()
@@ -343,8 +343,8 @@ plt.figure()
 plt.plot(freq_ref_zero*10**(-12), alpha_zero/100, label='Absorption coefficient')
 plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c="k",label='refference k from PCA program')
 #plt.plot(data_ref[:,0], filter_ref)
-plt.xlabel(r_per_step'$ \omega/THz $')
-plt.ylabel(r_per_step'$\alpha$')
+plt.xlabel(r'$ \omega/THz $')
+plt.ylabel(r'$\alpha$')
 plt.xlim(0.18, 4.5)
 #plt.ylim(0, 500)
 plt.legend()
@@ -474,62 +474,49 @@ r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 r_per_step = [None]*(len(steps) + 1)
 r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
 
-##############################
-ns = [None]*len(r_per_step)  #can be deleted if I find a better method of saving the n and k in an easy to acsess array
-ks = [None]*len(r_per_step)
-ns[0] = r_0[0]
-ks[0] = r_0[1]
-##############################
-
 r_per_step[0] = r_0
 epsilon = 10**-5
-i = 0
-l = 0
+
 print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
 
+threshold_n = 0.1
+threshold_k = 0.1
+kicker_n, kicker_k = 0.5, 0.5
 
-for freq in freq_ref:
-    params_delta_function = [H_0_value[freq_ref.index(freq)], freq, Material]
 
-    l = l + 1
+for freq in freq_ref[:10]:
+    index = np.argwhere(freq_ref==freq)[0][0]
+    params_delta_function = [H_0_value[index], freq, Material]
+                                        ##### not sure if this works
     for step in steps:
         r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h) # why is the convergence of my newton linear?
-        ns[step] = r_per_step[step][0]
-        ks[step] = r_per_step[step][1]
-        i = i + 1
+        r_0 = r_per_step[step]
         if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon):
             break
-
-
+        if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
+            r_per_step[step][0] = r_0[0] + kicker_n
+            kicker_n = kicker_n + 0.5
+            print("kicker used for n, kicker at: ", kicker_n)
+        if(r_per_step[step][1] < threshold_k):
+            r_per_step[step][1] = r_0[1] + kicker_k
+            kicker_k = kicker_k + 0.5
+            print("kicker used for k, kicker at: ", kicker_k)
+    kicker_n, kicker_k = 0.5, 0.5 # reset kickers
+    r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
+    r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
 
 print("Done")
 print("Plotting...")
+print(np.shape(r_per_freq))
 
-
-
-x = np.linspace(0, i, i)
 plt.figure()
-plt.title('start value r_0 = ' + str(r_0))
-plt.plot(x, ns[:i], label='n')
-plt.plot(x, ks[:i], label='k')
-plt.legend()
-plt.xlabel('steps')
+plt.plot(freq_ref[:10], r_per_freq[:][0], label='n')
+plt.plot(freq_ref[:10], r_per_freq[:][1], label='k')
+plt.xlabel('frequency')
 plt.ylabel('value')
-plt.savefig('build/testing/convergence.pdf')
-
-delta = [None]*len(x)
-i = 0
-for i in range(len(steps)):
-    delta[i] = delta_of_r([ns[i], ks[i]], params_delta_function)
-
-
-
-plt.figure()
-plt.plot(x, delta, label='delta')
+plt.title('title')
 plt.legend()
-plt.xlabel('steps')
-plt.ylabel('delta')
-plt.savefig('build/testing/delta.pdf')
+plt.savefig('build/testing/frequncy_against_n_k.pdf')
 
 """Things that dont work:
     - Transferfunction gives weird values and is divergent for some inputs
