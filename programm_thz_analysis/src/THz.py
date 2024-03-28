@@ -521,8 +521,7 @@ plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')
 
 """Things that dont work:
-    - Transferfunction gives weird values and is divergent for some inputs
-    - From my understanding we try to find the postion where T_calc - T_measured = 0. But because this oscillates we use the delta function, which we then need to minimize.
-        However the minimization seems to not work somehow. As its seems to be very dependent on the staring values, even though the paper suggests that its not
-    - My minimizer is not minimizing? atleast the delta function is not getting smaller through iteration
-        -> this seems to be the case when one of the values, either n or k passes 0    """
+    -Go from high to low freq
+    -Use good unwrapping
+    - n becomes lower than 1
+    -multithreading?   """
