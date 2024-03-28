@@ -484,34 +484,36 @@ threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
 
 
-for freq in freq_ref[:10]:
+for freq in freq_ref:
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], freq, Material]
                                         ##### not sure if this works
     for step in steps:
         r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h) # why is the convergence of my newton linear?
         r_0 = r_per_step[step]
-        if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon):
+        if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
             break
         if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
             r_per_step[step][0] = r_0[0] + kicker_n
             kicker_n = kicker_n + 0.5
             print("kicker used for n, kicker at: ", kicker_n)
+            if(step > 100):
+                step = step - 100 # every time we engage the kicker we give the algo a bit time
         if(r_per_step[step][1] < threshold_k):
             r_per_step[step][1] = r_0[1] + kicker_k
             kicker_k = kicker_k + 0.5
             print("kicker used for k, kicker at: ", kicker_k)
+            if(step > 100):
+                step = step - 100 # every time we engage the kicker we give the algo a bit time
     kicker_n, kicker_k = 0.5, 0.5 # reset kickers
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
     r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
 
 print("Done")
 print("Plotting...")
-print(np.shape(r_per_freq))
-
 plt.figure()
-plt.plot(freq_ref[:10], r_per_freq[:][0], label='n')
-plt.plot(freq_ref[:10], r_per_freq[:][1], label='k')
+plt.plot(freq_ref, flatten(r_per_freq)[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref, flatten(r_per_freq)[1::2], label='k')
 plt.xlabel('frequency')
 plt.ylabel('value')
 plt.title('title')

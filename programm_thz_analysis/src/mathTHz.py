@@ -4,6 +4,9 @@ from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
 
+def flatten(xss): # doesnt work for None type values
+    return [x for xs in xss for x in xs]
+
 def lin(A, B, x):
     return A*x+B
 
