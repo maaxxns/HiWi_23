@@ -470,7 +470,6 @@ num_steps = 1000 # maximum number of steps taken per frequency if the break cond
 
 ###################################################################################################################################
 steps = np.linspace(1, num_steps, num_steps, dtype=int)
-params_delta_function = [H_0_value[test_freq_index], freq_ref[test_freq_index], Material]
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k 
 r_per_step = [None]*(len(steps) + 1)
 r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
@@ -483,9 +482,9 @@ print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
 threshold_n = 0.1
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
-limit = None
-
-for freq in tqdm(freq_ref[:limit]):
+maxlimit = None # upper limit of the frequency range. None for no upper limit 5THz
+minlimit = None # lower limit of the frequency range. None for no lower limit 200 GHz
+for freq in tqdm(freq_ref[minlimit:maxlimit]):
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], freq, Material]
                                         ##### not sure if this works
@@ -513,8 +512,8 @@ for freq in tqdm(freq_ref[:limit]):
 print("Done")
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref[:limit], flatten(r_per_freq[:limit])[0::2], label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref[:limit], flatten(r_per_freq[:limit])[1::2], label='k')
+plt.plot(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
 plt.xlabel('frequency')
 plt.ylabel('value')
 plt.title('title')
