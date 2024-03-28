@@ -4,6 +4,7 @@ import csv
 from dataclasses import dataclass
 from numericsTHz import *
 from mathTHz import *
+from tqdm import tqdm
 ###################################################################################################################################
 # Datatypes
 
@@ -482,9 +483,9 @@ print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
 threshold_n = 0.1
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
+limit = None
 
-
-for freq in freq_ref:
+for freq in tqdm(freq_ref[:limit]):
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], freq, Material]
                                         ##### not sure if this works
@@ -496,13 +497,13 @@ for freq in freq_ref:
         if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
             r_per_step[step][0] = r_0[0] + kicker_n
             kicker_n = kicker_n + 0.5
-            print("kicker used for n, kicker at: ", kicker_n)
+            #print("kicker used for n, kicker at: ", kicker_n)
             if(step > 100):
                 step = step - 100 # every time we engage the kicker we give the algo a bit time
         if(r_per_step[step][1] < threshold_k):
             r_per_step[step][1] = r_0[1] + kicker_k
             kicker_k = kicker_k + 0.5
-            print("kicker used for k, kicker at: ", kicker_k)
+            #print("kicker used for k, kicker at: ", kicker_k)
             if(step > 100):
                 step = step - 100 # every time we engage the kicker we give the algo a bit time
     kicker_n, kicker_k = 0.5, 0.5 # reset kickers
@@ -512,8 +513,8 @@ for freq in freq_ref:
 print("Done")
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref, flatten(r_per_freq)[0::2], label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref, flatten(r_per_freq)[1::2], label='k')
+plt.plot(freq_ref[:limit], flatten(r_per_freq[:limit])[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[:limit], flatten(r_per_freq[:limit])[1::2], label='k')
 plt.xlabel('frequency')
 plt.ylabel('value')
 plt.title('title')
