@@ -7,6 +7,9 @@ from scipy.optimize import curve_fit
 def flatten(xss): # doesnt work for None type values
     return [x for xs in xss for x in xs]
 
+def reverse_array(array):
+    return array[::-1]
+
 def lin(A, B, x):
     return A*x+B
 
@@ -16,6 +19,8 @@ def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to
 def n(freq, d, phase): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved phase and returns the real refractive index
     return (1 + (c* phase)/(freq* d) ) #    return (1 - c/(freq* d) *phase)
 
+def absorption_coef(f, k): # takes complex refractice index at frequency f and returns the absorption coefficient at given frequency
+    return 2*f*k/(100*c)
 
 def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved H_0 and returns the complex refractive index
     n_real = n
@@ -68,22 +73,21 @@ def delta_of_r(r, params):
     n = r[0]
     k = r[1]
     H_0_measured = params[0]
-    freq = params[1]
-    Material_parameter = params[2]
+    phase_mes = params[1]
+    freq = params[2]
+    Material_parameter = params[3]
     """ delta is the error between the estimated Transferfunction 
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1,n_3 and k_1, k_3 can also be added 
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, True)
-    angle_mes = np.angle(H_0_measured)  
-    phase_mes = np.unwrap([angle_mes])  
     #if(H_0_calc <= 0):
     #    print(H_0_calc, " n ", n, " k ", k)
-    delta_rho = np.array([np.log(np.abs(H_0_calc)) - np.log(np.abs(H_0_measured))])
+    delta_rho = np.array([np.log(np.abs(H_0_calc[1])) - np.log(np.abs(H_0_measured))])[0]
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
-    phase_0 = np.unwrap([angle_0])  #phase 
+    phase_0 = np.unwrap(angle_0)[1]  #phase 
     delta_phi = (phase_0 - phase_mes)
     #print(delta_phi[0]**2 + delta_rho[0]**2)
-    return delta_phi[0]**2 + delta_rho[0]**2 # this should be minimized in the process or best even be zero 
+    return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
 
 def Transfer_function(omega, n, k, l, fp):
     T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))

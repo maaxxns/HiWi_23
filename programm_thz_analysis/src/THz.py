@@ -467,6 +467,9 @@ n_0 = 2 #intial guess for n
 k_0 = 2 # initial guess for k
 h = 0.065 #step size for Newton or rather the gradient/hessian matrix
 num_steps = 1000 # maximum number of steps taken per frequency if the break condition is not
+freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
+freq_max_lim = 3*10**12 #upper frequency limit
+
 
 ###################################################################################################################################
 steps = np.linspace(1, num_steps, num_steps, dtype=int)
@@ -475,18 +478,20 @@ r_per_step = [None]*(len(steps) + 1)
 r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
 
 r_per_step[0] = r_0
-epsilon = 10**-5
+epsilon = 10**-3
 
 print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
-
 threshold_n = 0.1
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
-maxlimit = None # upper limit of the frequency range. None for no upper limit 5THz
-minlimit = None # lower limit of the frequency range. None for no lower limit 200 GHz
-for freq in tqdm(freq_ref[minlimit:maxlimit]):
+maxlimit = -1000 # upper limit of the frequency range. -2 for no upper limit. 5THz
+minlimit = 1000 # lower limit of the frequency range. 1 for no lower limit. 200 GHz
+
+phase_rev = reverse_array(phase)
+H_0_value_reversed = reverse_array(H_0_value)
+for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], freq, Material]
+    params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
                                         ##### not sure if this works
     for step in steps:
         r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h) # why is the convergence of my newton linear?
@@ -509,14 +514,20 @@ for freq in tqdm(freq_ref[minlimit:maxlimit]):
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
     r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
 
+r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
+
+alpha = absorption_coef(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
+
 print("Done")
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
-plt.xlabel('frequency')
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
+#plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
+
+plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
-plt.title('title')
+plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')
 
