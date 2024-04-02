@@ -492,9 +492,8 @@ H_0_value_reversed = reverse_array(H_0_value)
 for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
-                                        ##### not sure if this works
     for step in steps:
-        r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h) # why is the convergence of my newton linear?
+        r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h)
         r_0 = r_per_step[step]
         if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
             break
@@ -514,7 +513,7 @@ for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through freq
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
     r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
 
-r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
+#r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 
 alpha = absorption_coef(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
 

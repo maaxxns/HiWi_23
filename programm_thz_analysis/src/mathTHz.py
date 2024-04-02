@@ -36,17 +36,6 @@ def FFT_func(I, t): # FFT, I the Intensity of the signal as array of size X, t t
     FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
     return [FDelay[10:], FX[10:]] # cut of the noise frequency
 
-#def unwrapping_alt(amp_ref, amp_sam, freq_ref): #unwrapping from paper Phase_correction_in_THz_TDS_JIMT_revision_clean.pdf
-#    angle_ref = np.angle(amp_ref)
-#    angle_sam = np.angle(amp_sam)
-#    phase_dif = (np.unwrap(np.abs(angle_ref - angle_sam)))
-#    params,_ = curve_fit(lin, freq_ref, phase_dif)
-#    phase_dif_0 = phase_dif - 2*np.pi*np.floor(params[1]/np.pi)
-#    phase_ref_0 = freq_ref * t_peak_ref
-#    phase_sam_0 = freq_sam * t_peak_sam
-#    phase_offset = freq_ref * (t_peak_sam - t_peak_ref)
-#    return phase_dif_0 - phase_ref_0 + phase_sam_0 + phase_offset
-
 def error_function(H_0_calc, H_0_measured): # The error function needs to be minimized to find the values for n and k
     # a good explanation can be found  "A Reliable Method for Extraction of Material
     # Parameters in Terahertz Time-Domain Spectroscopy"
@@ -85,7 +74,7 @@ def delta_of_r(r, params):
     delta_rho = np.array([np.log(np.abs(H_0_calc[1])) - np.log(np.abs(H_0_measured))])[0]
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap(angle_0)[1]  #phase 
-    delta_phi = (phase_0 - phase_mes)
+    delta_phi = np.abs(phase_0 - phase_mes)
     #print(delta_phi[0]**2 + delta_rho[0]**2)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
 

@@ -16,22 +16,9 @@ def Hessematrix(func, r, params=None, h = 10**(-6)):
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
     return np.array([[A,B], [C,D]])
 
-def newton_r_p_zero_finder(func, r, params = None, h=10**(-6)): #newton iteration step to find zero crossing 
-    grad_ = grad_2D(func = func, r = r, params = params, h = h) # calculate the gradient of func(r_p)
-    if isinstance(grad_[0], complex) or isinstance(grad_[1], complex):
-        print("complex grad")
-    with open('build/testing/gradient.csv', 'w') as csvfile: #save the gradient to see if its always negative (we want to get to a minimum or even better to a zero crossing)
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(grad_) 
-    print(func(r, params))
-  
-    r_p_1 = r - func(r, params)/grad_
-
-    return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
-
 def newton_minimizer(func, r, params, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
     A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p)
     grad_ = grad_2D(func,r, params, h) # calculate the gradient of delta(r_p)
-    r_p_1 = r - np.linalg.inv((A)).dot((grad_)) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
+    r_p_1 = r - np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
