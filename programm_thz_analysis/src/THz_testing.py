@@ -24,9 +24,9 @@ k_slab = 1
 
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
-freq_ref = np.linspace(5*10**11, 3*10**12, 500) #test freq from 500 Ghz to 3 THz
-n_test = 1.2 * np.linspace(1,2,500)
-k_test = 1.1 * np.linspace(1,2,500)
+freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
+n_test = np.linspace(1.2,7,300)
+k_test = 1.1 * np.linspace(1,2,300)
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
 
@@ -96,7 +96,7 @@ plt.figure()
 plt.plot(range(len(delta_per_freq[1])), (delta_per_freq[1]), label='delta 1')
 plt.plot(range(len(delta_per_freq[-2])), (delta_per_freq[-2]), label='delta - 1')
 plt.plot(range(len(delta_per_freq[50])), (delta_per_freq[50]), label='delta 50')
-plt.plot(range(len(delta_per_freq[300])), (delta_per_freq[300]), label='delta 500')
+plt.plot(range(len(delta_per_freq[80])), (delta_per_freq[80]), label='delta 80')
 
 plt.xlabel(r'steps')
 plt.ylabel('delta')
@@ -105,25 +105,49 @@ plt.legend()
 plt.savefig('build/testing/delta.pdf')
 plt.close()
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-index = 250
-params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
+#########################################################################################################################################################
+#       3 d wireframe plot of dela function
+#########################################################################################################################################################
 
 
-# Grab some test data.
-Z = np.empty(shape=(len(n_test),len(k_test)))
-for q in tqdm(range(len(n_test))):
-    for a in range(len(k_test)):
-        Z[q,a] = delta_of_r([n_test[q], k_test[a]], params_delta_function)
+#fig = plt.figure()
+#ax = fig.add_subplot(projection='3d')
+#index = 80
+#params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
+#
+#
+## Grab some test data.
+#Z = np.empty(shape=(len(n_test),len(k_test)))
+#for q in tqdm(range(len(n_test))):
+#    for a in range(len(k_test)):
+#        Z[q,a] = delta_of_r([n_test[q], k_test[a]], params_delta_function)
+#
+#X, Y= n_test, k_test
+## Plot a basic wireframe.
+#ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
+#
+#plt.savefig('build/testing/delta3d.pdf')
+#
+#plt.close()
 
-X, Y= n_test, k_test
-# Plot a basic wireframe.
-ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
-
-plt.savefig('build/testing/delta3d.pdf')
+#########################################################################################################################################################
+#########################################################################################################################################################
 
 
+# Lets hava a look at the delta function
+delta_test = np.empty(shape=len(n_test[1:-1]))
+i = 0
+for ns in (n_test[1:-1]):
+    
+    index = 80
+    params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
+    delta_test[i] = delta_of_r([ns, 1.2], params_delta_function)
+    i = i + 1
+plt.figure()
+plt.plot(n_test[1:-1], delta_test, label='delta')
+plt.xlabel('n')
+plt.ylabel('delta')
+plt.savefig('build/testing/delta_func_for_n.pdf')
 #########################################################################################################################################################
 
 # for testing out the minimizer for different function
