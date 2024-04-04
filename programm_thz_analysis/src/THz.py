@@ -190,14 +190,14 @@ phase = np.unwrap(angle)  #phase
 # Note that phase and phase_dif should be equal. However, there are not. So either the paper is wrong. Or I am doing something wrong
 
 plt.figure()
-#plt.plot(freq_ref*10**(-12),phase_dif, label='phase differenz')
+plt.plot(freq_ref*10**(-12),phase, label='phase unwrapped')
 plt.plot(freq_ref*10**(-12),angle, label='angle directly from H_0')
 #plt.plot(data_ref[:,0], filter_ref)
 plt.xlabel(r'$ \omega/THz $')
 plt.ylabel(r'$\Phi$')
 plt.legend()
 plt.grid()
-plt.title('The phase unwarpped')
+plt.title('The phase unwarpped and wrapped')
 plt.savefig('build/THzPhase.pdf')
 plt.close()
 
@@ -487,13 +487,11 @@ kicker_n, kicker_k = 0.5, 0.5
 maxlimit = -1000 # upper limit of the frequency range. -2 for no upper limit. 5THz
 minlimit = 1000 # lower limit of the frequency range. 1 for no lower limit. 200 GHz
 
-phase_rev = reverse_array(phase)
-H_0_value_reversed = reverse_array(H_0_value)
 for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
+    params_delta_function = [H_0_value[index], phase[index], freq_ref,index, Material]
     for step in steps:
-        r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h)
+        r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
         r_0 = r_per_step[step]
         if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
             break
