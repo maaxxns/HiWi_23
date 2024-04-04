@@ -40,7 +40,7 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
-n_test = np.linspace(1,10,300)
+n_test = 0.5*np.sin(3*np.linspace(1,10,300)) + 3
 k_test = 1.1 * np.linspace(1,5,300)
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
@@ -57,7 +57,7 @@ threshold_n = 0.1
 threshold_k = 0.1
 h = 0.06
 
-epsilon = 10**-3
+epsilon = 10**-4
 i = 0
 H_0_value = T
 phase = np.unwrap(np.angle(T))
@@ -136,30 +136,30 @@ plt.close()
 #########################################################################################################################################################
 
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-index = 80
-params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material]
-
-
-# Grab some test data.
-Z = np.empty(shape=(len(n_test),len(k_test)))
-for q in tqdm(range(len(n_test))):
-    for a in range(len(k_test)):
-        Z[q,a] = delta_of_r_whole_frequency_range([n_test[q], k_test[a]], params_delta_function)
-
-X, Y= n_test, k_test
-# Plot a basic wireframe.
-ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
-
-plt.savefig('build/testing/delta3d.pdf')
+#fig = plt.figure()
+#ax = fig.add_subplot(projection='3d')
+#index = 80
+#params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material]
+#
+#
+## Grab some test data.
+#Z = np.empty(shape=(len(n_test),len(k_test)))
+#for q in tqdm(range(len(n_test))):
+#    for a in range(len(k_test)):
+#        Z[q,a] = delta_of_r_whole_frequency_range([n_test[q], k_test[a]], params_delta_function)
+#
+#X, Y= n_test, k_test
+## Plot a basic wireframe.
+#ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
+#
+#plt.savefig('build/testing/delta3d.pdf')
 
 plt.close()
 
 #########################################################################################################################################################
 #########################################################################################################################################################
 
-
+# Plots the delta function for one freq value and one k value but differet n values
 # Lets hava a look at the delta function
 delta_test = np.empty(shape=len(n_test[1:-1]))
 i = 0
