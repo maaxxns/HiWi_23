@@ -7,6 +7,21 @@ from mathTHz import *
 from tqdm import tqdm
 from mpl_toolkits.mplot3d import axes3d
 
+"""
+Problems to be solved:
+    - Unwrapping with just three complex angles doesnt work because if the angles are pos-neg-neg or neg-pos-pos the unwrapping 
+      cant see the bigger picture for example in the actual array the angles might look like pos-pos-pos-pos-neg-neg so the double neg should be
+      flipped up instead of the one pos before them being flipped down. This results in a "jump" that shouldnt happen.
+      Meaning I have to find a better way for the unwrapping.
+
+    Idea to solve it:
+    1. -Runtime effiecient- maybe I can take an array that is a bit bigger but not the whole frequency range like 10-50 array entrances for unwrapping.
+    This would already increase computation time by a factor of atleast 5-25.
+    2. -brute force method- Take the whole frequency range for unwrapping. This would take insanely long for one computation step.
+    3. find a better unwrapping 
+
+"""
+
 @dataclass
 class Material_parameters:
     d: float
@@ -24,9 +39,9 @@ k_slab = 1
 
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
-freq_ref = np.linspace(5*10**11, 3*10**12, 100) #test freq from 500 Ghz to 3 THz
-n_test = np.linspace(4.2,4.4,100)
-k_test = 1.1 * np.linspace(1,2,100)
+freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
+n_test = np.linspace(1,10,300)
+k_test = 1.1 * np.linspace(1,5,300)
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
 
@@ -44,18 +59,29 @@ h = 0.06
 
 epsilon = 10**-3
 i = 0
-H_0_value_reversed = reverse_array(T)
-phase_rev = reverse_array(np.unwrap(np.angle(T)))
+H_0_value = T
+phase = np.unwrap(np.angle(T))
+
+plt.figure()
+plt.plot(freq_ref, np.unwrap(np.angle(T)), label='unwrapped')
+plt.plot(freq_ref, np.angle(T), label='unwrapped')
+plt.legend()
+plt.xlabel("freq")
+plt.ylabel('phase')
+plt.savefig('build/testing/phase.pdf')
+plt.close()
+
+
 r_per_step[0] = r_p
 kicker_n, kicker_k = 0.5, 0.5
 
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
+    params_delta_function = [H_0_value[index], phase[index], freq_ref, index,  Material]
     for step in steps:
-        r_per_step[step] = newton_minimizer(delta_of_r, r_per_step[step - 1], params=params_delta_function, h = h)
+        r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
         r_0 = r_per_step[step]
-        delta_per_step[step - 1] = delta_of_r(r_per_step[step - 1], params_delta_function)
+        delta_per_step[step - 1] = delta_of_r_whole_frequency_range(r_per_step[step - 1], params_delta_function)
         if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
             break
         if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
@@ -110,25 +136,25 @@ plt.close()
 #########################################################################################################################################################
 
 
-#fig = plt.figure()
-#ax = fig.add_subplot(projection='3d')
-#index = 80
-#params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
-#
-#
-## Grab some test data.
-#Z = np.empty(shape=(len(n_test),len(k_test)))
-#for q in tqdm(range(len(n_test))):
-#    for a in range(len(k_test)):
-#        Z[q,a] = delta_of_r([n_test[q], k_test[a]], params_delta_function)
-#
-#X, Y= n_test, k_test
-## Plot a basic wireframe.
-#ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
-#
-#plt.savefig('build/testing/delta3d.pdf')
-#
-#plt.close()
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+index = 80
+params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material]
+
+
+# Grab some test data.
+Z = np.empty(shape=(len(n_test),len(k_test)))
+for q in tqdm(range(len(n_test))):
+    for a in range(len(k_test)):
+        Z[q,a] = delta_of_r_whole_frequency_range([n_test[q], k_test[a]], params_delta_function)
+
+X, Y= n_test, k_test
+# Plot a basic wireframe.
+ax.plot_wireframe(X[0::5], Y[0::5], Z[0::5,0::5], rstride=10, cstride=10)
+
+plt.savefig('build/testing/delta3d.pdf')
+
+plt.close()
 
 #########################################################################################################################################################
 #########################################################################################################################################################
@@ -140,8 +166,8 @@ i = 0
 for ns in (n_test[1:-1]):
     
     index = 80
-    params_delta_function = [H_0_value_reversed[index], phase_rev[index], np.array([freq_ref[index- 1], freq_ref[index], freq_ref[index + 1]]), Material]
-    delta_test[i] = delta_of_r([ns, 1.2], params_delta_function)
+    params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material]
+    delta_test[i] = delta_of_r_whole_frequency_range([ns, 1.2], params_delta_function)
     i = i + 1
 plt.figure()
 plt.plot(n_test[1:-1], delta_test, label='delta')
