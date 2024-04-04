@@ -73,10 +73,32 @@ def delta_of_r(r, params):
     #    print(H_0_calc, " n ", n, " k ", k)
     delta_rho = np.array([np.log(np.abs(H_0_calc[1])) - np.log(np.abs(H_0_measured))])[0]
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
-    phase_0 = np.unwrap(angle_0)[1]  #phase 
-    delta_phi = np.abs(phase_0 - phase_mes)
+    #phase_0 = np.unwrap(angle_0)[1]  #phase 
+    delta_phi = np.abs(angle_0 [1]- phase_mes)
     #print(delta_phi[0]**2 + delta_rho[0]**2)
     return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
+
+def delta_of_r_whole_frequency_range(r, params):
+    n = r[0]
+    k = r[1]
+    H_0_measured = params[0]
+    phase_mes = params[1]
+    freq = params[2]
+    index = params[3]
+    Material_parameter = params[4]
+    """ delta is the error between the estimated Transferfunction 
+    and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
+    """ #if needed n_1,n_3 and k_1, k_3 can also be added 
+    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, True)
+    #if(H_0_calc <= 0):
+    #    print(H_0_calc, " n ", n, " k ", k)
+    delta_rho = np.array([np.log(np.abs(H_0_calc[index])) - np.log(np.abs(H_0_measured))])[0]
+    angle_0 = np.angle(H_0_calc) #angle between complex numbers
+    phase_0 = np.unwrap(angle_0)[index]  #phase 
+    delta_phi = np.abs(phase_0- phase_mes)
+    #print(delta_phi[0]**2 + delta_rho[0]**2)
+    return delta_phi**2 + delta_rho**2 # this should be minimized in the process or best even be zero 
+
 
 def Transfer_function(omega, n, k, l, fp):
     T = 4*n/(n + 1)**2 * np.exp(k*(omega*l/c)) * np.exp(-1j * (n - 1) *(omega*l/c))
