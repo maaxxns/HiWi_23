@@ -17,6 +17,16 @@ class Material_parameters:
     n_3: float 
     k_3: float
 
+"""
+    The algorythm is very unstable depeding on what the starting parameter is.
+    For the test data set in which I use "smooth" data this is not the case.
+    I Already employ an estimator for the real part of the refractive index, but not for the complex part.
+    Even with the estimator the estimation process for other values other than the intial one is quite hard to find at some frequencies.
+    Depeding on the epsilon (break condition from step one to step two has to be smaller than epsilon) and the stepsize the apgorythm takes between 15-50 minutes for 1000 frequency values.
+    Usually I run the algo at epsilon = 10**-4 - 10**-3 and h = 0.05 - 0.06. This results in a time of about 20 minutes for 1000 steps but should decreas drastically if the intial guess would be better.
+"""
+
+
 ###################################################################################################################################
 ###################################################################################################################################
 #       All data is read in, in this block.
@@ -262,7 +272,7 @@ maxlimit = -1 # upper limit of the frequency range. -2 for no upper limit. 5THz
 n_0 = estimater_n(angle, freq_ref, Material)[maxlimit] #intial guess for n, calculated as in the paper "A Reliable Method for Extraction of Material
                                                        #Parameters in Terahertz Time-Domain Spectroscopy
                                                        #Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz"
-k_0 = 2 # initial guess for k
+k_0 = n_0 # initial guess for k
 h = 0.065 #step size for Newton or rather the gradient/hessian matrix
 num_steps = 100 # maximum number of steps taken per frequency if the break condition is not
 freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
@@ -320,6 +330,6 @@ plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit]
 
 plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
-plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + "{:.2f}".format(str([n_0, k_0])))
+plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')

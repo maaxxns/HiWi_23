@@ -20,6 +20,13 @@ Problems to be solved:
     2. -brute force method- Take the whole frequency range for unwrapping. This would take insanely long for one computation step.
     3. find a better unwrapping 
 
+    for now I use solution 2
+
+    Problem 2
+    - Noise seems to be a problem if its introcude into the Transmittion function somehow?
+        I still get good results when I just introduce noise into the n and k value
+
+
 """
 
 @dataclass
@@ -40,12 +47,16 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
+noise = np.random.normal(0,0.00001,len(freq_ref)) + 1j*np.random.normal(0,0.00001,len(freq_ref))
 n_test = 0.5*np.exp(0.2*np.linspace(1,10,300)) + 3
 k_test = 1.1 * np.linspace(1,5,300)
 
-T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
+T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True) + noise
 
-r_p = np.array([estimater_n(np.unwrap(np.angle(T)), freq_ref, Material)[-1],2])
+
+T = T
+
+r_p = np.array([estimater_n(np.unwrap(np.angle(T)), freq_ref, Material)[-1],10])
 
 steps = np.linspace(1, 12000, 12000, dtype=int)
 
@@ -57,7 +68,7 @@ threshold_n = 0.1
 threshold_k = 0.1
 h = 0.06
 
-epsilon = 10**-4
+epsilon = 10**-3
 i = 0
 H_0_value = T
 phase = np.unwrap(np.angle(T))
@@ -113,7 +124,7 @@ plt.plot(freq_ref[1:-2]/1e12, k_test[1:-2], label='actual k')
 
 plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
-#plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
+plt.title('noise std' + str(0.00001) +'parameter: epsilon ' + str(epsilon) + ', h \n' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
 plt.legend()
 plt.savefig('build/testing/test.pdf')
 
