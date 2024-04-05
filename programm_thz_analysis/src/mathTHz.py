@@ -19,6 +19,12 @@ def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to
 def n(freq, d, phase): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved phase and returns the real refractive index
     return (1 + (c* phase)/(freq* d) ) #    return (1 - c/(freq* d) *phase)
 
+def estimater_n(angle_T, omega, Material_parameter, substrate=None):
+    if(substrate != None):
+        return substrate + angle_T/(omega*Material_parameter.d/c)
+    else: 
+        return 1 + angle_T/(omega*Material_parameter.d/c)
+
 def absorption_coef(f, k): # takes complex refractice index at frequency f and returns the absorption coefficient at given frequency
     return 2*f*k/(100*c)
 

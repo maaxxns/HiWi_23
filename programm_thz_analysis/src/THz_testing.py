@@ -40,12 +40,12 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
-n_test = 0.5*np.sin(3*np.linspace(1,10,300)) + 3
+n_test = 0.5*np.exp(0.2*np.linspace(1,10,300)) + 3
 k_test = 1.1 * np.linspace(1,5,300)
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
 
-r_p = np.array([n_test[-1],k_test[-1]])
+r_p = np.array([estimater_n(np.unwrap(np.angle(T)), freq_ref, Material)[-1],2])
 
 steps = np.linspace(1, 12000, 12000, dtype=int)
 
