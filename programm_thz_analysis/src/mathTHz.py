@@ -7,11 +7,12 @@ from scipy.optimize import curve_fit
 def flatten(xss): # doesnt work for None type values
     return [x for xs in xss for x in xs]
 
+def gaussian(x, x_0, sigma = 0.1):
+    N = len(x)
+    return np.exp(-1/2*((x-x_0)/(N*sigma/2))**2)
+
 def reverse_array(array):
     return array[::-1]
-
-def lin(A, B, x):
-    return A*x+B
 
 def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to return complex transfer function
     return (data_sam/data_ref)
@@ -71,10 +72,11 @@ def delta_of_r(r, params):
     phase_mes = params[1]
     freq = params[2]
     Material_parameter = params[3]
+    FP = params[4]
     """ delta is the error between the estimated Transferfunction 
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1,n_3 and k_1, k_3 can also be added 
-    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, True)
+    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, FP)
     #if(H_0_calc <= 0):
     #    print(H_0_calc, " n ", n, " k ", k)
     delta_rho = np.array([np.log(np.abs(H_0_calc[1])) - np.log(np.abs(H_0_measured))])[0]
@@ -92,10 +94,11 @@ def delta_of_r_whole_frequency_range(r, params):
     freq = params[2]
     index = params[3]
     Material_parameter = params[4]
+    FP = params[5]
     """ delta is the error between the estimated Transferfunction 
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1,n_3 and k_1, k_3 can also be added 
-    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, True)
+    H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, FP)
     #if(H_0_calc <= 0):
     #    print(H_0_calc, " n ", n, " k ", k)
     delta_rho = np.array([np.log(np.abs(H_0_calc[index])) - np.log(np.abs(H_0_measured))])[0]
@@ -127,3 +130,9 @@ def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2,
         return T*FP
     else:
         return T
+    
+def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
+    n_1 = Material.n_1 + 1j*Material.k_1
+    n_2 = r[0] + 1j*r[1] 
+    n_3 = Material.n_3 + 1j*Material.k_3
+    return 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * freq*Material.d/c)))

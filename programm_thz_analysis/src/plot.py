@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
-
 def plot_Intensity_against_time(data_ref, data_sam): #data_ref is refernece data, data_sam is sample data
     # The function plots the Intensity of the sample and reference in time
 
@@ -85,12 +82,11 @@ def plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False):
         plt.savefig('build/THzPhase.pdf')
         plt.close()
     
-def plot_realpart_refractive_index(freq_ref, n_real, material_properties_ref, zeropadded=False):    
+def plot_realpart_refractive_index(freq_ref, n_real, zeropadded=False):    
     if(zeropadded):
         plt.figure()
         #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
         plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
-        plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel('n (arb.)')
         plt.xlim(0.18, 4.5)
@@ -104,7 +100,6 @@ def plot_realpart_refractive_index(freq_ref, n_real, material_properties_ref, ze
         plt.figure()
         #plt.plot(freq_ref*10**(-12), n(freq_ref, d, phase_dif), label='real part of refractive index calculated by the alternative unwrap')
         plt.plot(freq_ref*10**(-12), n_real, label='real part of refractive index')
-        plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,1], c='k', label='refference n from PCA program')
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel('n (arb.)')
         plt.xlim(0.18, 4.5)
@@ -143,11 +138,10 @@ def plot_complex_refrective_index(freq_ref, n_im, zeropadded=False):
         plt.savefig('build/THz_complex_index.pdf')
         plt.close()
 
-def plot_absorption_coefficient(freq_ref, alpha, material_properties_ref, zeropadded=False):
+def plot_absorption_coefficient(freq_ref, alpha, zeropadded=False):
     if(zeropadded):
         plt.figure()
         plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
-        plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c="k",label='refference k from PCA program')
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\alpha$')
@@ -161,7 +155,6 @@ def plot_absorption_coefficient(freq_ref, alpha, material_properties_ref, zeropa
     else:
         plt.figure()
         plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
-        plt.plot(material_properties_ref[10:,0], material_properties_ref[10:,2], c='k', label='refference k from PCA program')
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\alpha$')
@@ -171,4 +164,43 @@ def plot_absorption_coefficient(freq_ref, alpha, material_properties_ref, zeropa
         plt.grid()
         plt.title('The absorption coeffiecient of silicon')
         plt.savefig('build/THz_absorption.pdf')
+        plt.close()
+
+def plot_gaussian(x,y, data):
+        plt.figure()
+        plt.plot(x, y, label='gaussian')
+        plt.plot(data[:,0], data[:,1], label="data")
+        plt.xlabel(r'$ t $')
+        plt.ylabel(r'$I$')
+        #plt.ylim(0, 500)
+        plt.legend()
+        plt.grid()
+        plt.title('gaussian')
+        plt.savefig('build/gaussian.pdf')
+        plt.close()
+
+def plot_H_0_against_freq(freq, H_0, zeropadded=False):
+    if(zeropadded):
+        plt.figure()
+        plt.plot(freq, H_0.real, label='real')
+        plt.plot(freq, H_0.imag, label='imag')
+        plt.xlabel(r'$ \omega $')
+        plt.ylabel(r'$T$')
+        #plt.ylim(0, 500)
+        plt.legend()
+        plt.grid()
+        plt.title('Transmissionfunction zeropadded in freq')
+        plt.savefig('build/Transmissionfunction_zeropadded.pdf')
+        plt.close()
+    else:
+        plt.figure()
+        plt.plot(freq, H_0.real, label='real')
+        plt.plot(freq, H_0.imag, label='imag')
+        plt.xlabel(r'$ \omega $')
+        plt.ylabel(r'$T$')
+        #plt.ylim(0, 500)
+        plt.legend()
+        plt.grid()
+        plt.title('Transmissionfunction in freq')
+        plt.savefig('build/Transmissionfunction.pdf')
         plt.close()

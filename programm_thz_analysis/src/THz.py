@@ -24,7 +24,17 @@ class Material_parameters:
     Even with the estimator the estimation process for other values other than the intial one is quite hard to find at some frequencies.
     Depeding on the epsilon (break condition from step one to step two has to be smaller than epsilon) and the stepsize the apgorythm takes between 15-50 minutes for 1000 frequency values.
     Usually I run the algo at epsilon = 10**-4 - 10**-3 and h = 0.05 - 0.06. This results in a time of about 20 minutes for 1000 steps but should decreas drastically if the intial guess would be better.
-"""
+
+    Idea:
+        Better preprocessing.
+            Usually I give the algo all the data in time domain and filter out too high and too low frequencies afterwards.
+            But I think I should try to give the algorythm just a specific timeframe, so that the pre and post pulse will not be inlcuded in the data
+
+    Eliminate Oscillations:
+        - Divide by FP
+        - Measure over bigger intervall
+
+    """
 
 
 ###################################################################################################################################
@@ -38,7 +48,7 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 0.26*10**(-3) # thickness of the probe in SI
+d = 700*10**(-6) # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -46,9 +56,8 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 #Read the excel file
-material_properties_ref = np.genfromtxt('data/teflon_1_material_properties.txt')
-data_sam = np.genfromtxt('data/Si_measurement/SI_purge.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('data/Si_measurement/SI_reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+data_sam = np.genfromtxt('data/20240409/Si_wafer_rough_700um.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/20240409/reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 ###################################################################################################################################
 ones = np.ones(10000)
@@ -87,13 +96,19 @@ print('Delta t = ', " ",timestep/10**(-12), "ps")
 print("T ", N*timestep/10**(-12), "ps")
 print("Delta f = ", " ", Delta_f*10**(-12), "THz")
 
-peak_ref,prop = find_peaks(data_ref[:,1], prominence=1) # finds the highest peak in the dataset and returns its index
-peak_ref = peak_ref[0]
-peak_sam,prop = find_peaks(data_sam[:,1], prominence=1)
-peak_sam = peak_sam[0]
+###################################################################################################################################
+#           Filters if wanted  
+###################################################################################################################################
+filter_0 = True
+if(filter_0):
+    x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
+    plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
+    data_sam = filter_dataset(data_sam)
+    data_ref = filter_dataset(data_ref)
+    print("Gaussian function used as filter for preprocessing")
+else:
+    print("No preprocessing filter")
 
-t_peak_ref = data_ref[peak_ref,0] # the time value of the highest peak in the dataset
-t_peak_sam = data_sam[peak_sam,0]
 ###################################################################################################################################
 # This block applies the FFT to the data, aswell as masking frequencies that we dont need for the analization
 ###################################################################################################################################
@@ -106,6 +121,12 @@ amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
 freq_sam = freq_sam[mask1]
+mask2 = 200*10**9 < freq_ref # mask1ed for THz frequency above 200 GHz 
+amp_ref = amp_ref[mask2]
+amp_sam = amp_sam[mask2]
+freq_ref = freq_ref[mask2]
+freq_sam = freq_sam[mask2]
+
 
 ###################################################################################################################################
 # This block applies the FFT to the zero padded data, aswell as masking frequencies that we dont need for the analization
@@ -119,16 +140,6 @@ amp_sam_zero = amp_sam_zero[mask1_zero]
 freq_ref_zero = freq_ref_zero[mask1_zero]
 freq_sam_zero = freq_sam_zero[mask1_zero]
 
-##########################################################################################
-# This block plots the FFT
-##########################################################################################
-
-
-##########################################################################################
-# This block plots the FFT of the zerp padded data
-##########################################################################################
-
-
 ###################################################################################################################################
 # This block calculates the complex transfer function and does the unwrapping porcess
 ###################################################################################################################################
@@ -138,7 +149,6 @@ H_0_value = H_0(amp_ref, amp_sam) # complex transfer function
 angle = np.angle(H_0_value) #angle between complex numbers
 phase = np.unwrap(angle)  #phase 
 
-
 ###################################################################################################################################
 # This block calculates the complex transfer function and does the unwrapping porcess
 ###################################################################################################################################
@@ -147,6 +157,7 @@ H_0_value_zero = H_0(amp_ref_zero, amp_sam_zero) # complex transfer function
 
 angle_zero = np.angle(H_0_value_zero) #angle between complex numbers
 phase_zero = np.unwrap(angle_zero)  #phase 
+#phase_approx  = linear_approx(freq_ref_zero, phase_zero)[1] * freq_ref + linear_approx(freq_ref_zero, phase_zero)[0]
 
 ###################################################################################################################################
 #   This block calculates the real and complex part of the refractive index
@@ -174,28 +185,34 @@ alpha = 2*freq_ref *n_im/c
 
 alpha_zero = 2*freq_ref_zero*n_im_zero/c
 
-
+###################################################################################################################################
+#       testing stuff out 
+###################################################################################################################################
+"""For thin samples the Transmission function oscillates because the Thz is reflected inside the sample multiple times.
+Lets see what the frequency of the osciallation is"""
+freq_T, amp_T = FFT_func(H_0_value, freq_ref)
+plot_FFT(freq_T, amp_T, freq_T, amp_T)
 ###################################################################################################################################
 #       All the plotting
 ###################################################################################################################################
 
-plotting = True
-
+plotting = False
 if(plotting):
     print("Plotting...\n")
     plot_Intensity_against_time(data_ref, data_sam)
     plot_Intensity_against_time_zeropadding(data_ref_zero, data_sam_zero)
-    plot_FFT(freq_ref, amp_ref, freq_sam, amp_sam)
+    plot_FFT(freq_ref, amp_ref, freq_ref, amp_sam)
     plot_FFT(freq_ref_zero, amp_ref_zero, freq_sam_zero, amp_sam_zero, zeropadded=True)
     plot_phase_against_freq(freq_ref, phase, angle)
     plot_phase_against_freq(freq_ref_zero, phase_zero, angle_zero, zeropadded=True)
-    plot_realpart_refractive_index(freq_ref, n_real, material_properties_ref)
-    plot_realpart_refractive_index(freq_ref_zero, n_real_zero, material_properties_ref, zeropadded=True)
+    plot_realpart_refractive_index(freq_ref, n_real)
+    plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
     plot_complex_refrective_index(freq_ref, n_im)
     plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
-    plot_absorption_coefficient(freq_ref, alpha, material_properties_ref)
-    plot_absorption_coefficient(freq_ref_zero, alpha_zero, material_properties_ref, zeropadded=True)
-
+    plot_absorption_coefficient(freq_ref, alpha)
+    plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
+    plot_H_0_against_freq(freq_ref, H_0_value)
+    plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
 ###################################################################################################################################
@@ -244,25 +261,25 @@ h = 0.065 #step size for Newton or rather the gradient/hessian matrix
 num_steps = 1000 # maximum number of steps taken per frequency if the break condition is not
 freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
 freq_max_lim = 3*10**12 #upper frequency limit
-
+FP = True 
 
 ###################################################################################################################################
 steps = np.linspace(1, num_steps, num_steps, dtype=int)
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k 
 r_per_step = [None]*(len(steps) + 1)
-r_per_freq = [None]*len(freq_ref_zero) # all the n and k per frequency will be written into this array
+r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
 
 r_per_step[0] = r_0
 epsilon = 10**-4
 
 print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
-threshold_n = 0.1
+threshold_n = 0.9
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
 
-for freq in tqdm(reverse_array(freq_ref_zero[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
-    index = np.argwhere(freq_ref_zero==freq)[0][0]
-    params_delta_function = [H_0_value_zero[index], phase_zero[index], freq_ref_zero,index, Material]
+for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
+    index = np.argwhere(freq_ref==freq)[0][0]
+    params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
     for step in steps:
         r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
         r_0 = r_per_step[step]
@@ -286,13 +303,13 @@ for freq in tqdm(reverse_array(freq_ref_zero[minlimit:maxlimit])): #walk through
 
 #r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 
-alpha = absorption_coef(freq_ref_zero[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
+alpha = absorption_coef(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
 
 print("Done")
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref_zero[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref_zero[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
 #plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
 
 plt.xlabel(r'$\omega / THz$')

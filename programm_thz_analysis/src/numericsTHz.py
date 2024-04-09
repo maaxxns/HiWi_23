@@ -1,5 +1,18 @@
 import numpy as np
-import csv
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+from mathTHz import gaussian
+def lin(A, B, x):
+    return A*x+B
+
+def filter_dataset(data):
+    peak,prop = find_peaks(data[:,1], prominence=1) # finds the highest peak in the dataset and returns its index
+    peak = peak[0]
+    x = np.linspace(0,len(data[:,0]),len(data[:,0]))
+    # Some test with filters for the dataset
+    data[:,1] = data[:,1]#/np.amax(np.abs(data[:,1]))
+    data[:,1] = data[:,1]*gaussian(x, peak, sigma=0.1) # dataset with gaussian filter
+    return data
 
 def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
@@ -22,3 +35,10 @@ def newton_minimizer(func, r, params, h=10**(-6)): #newton iteration step to fin
     r_p_1 = r - np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
+
+def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
+    boundaries = len(x)//2
+    upper_bound = boundaries + boundaries//2
+    lower_bound = boundaries - boundaries//2
+    params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
+    return params
