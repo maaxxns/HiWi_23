@@ -41,7 +41,9 @@ for data in datas:
         fft_datas[i] = [data[0], FFT_func(data[1][:,4], data[1][:, 2])] # make FFT of data
     i = i + 1
 
-for fft_data in fft_datas: # plot FFT
+for fft_data in fft_datas: # plot FFT and save
+    with open('build/FFTs/FFT_of_' + fft_data[0] + '.pdf', 'w') as file:
+        file.write(fft_data)
     plt.figure()
     plt.xlim(0, 2)
     plt.plot(fft_data[1][0], np.abs(fft_data[1][1]), label='FFT of ' + fft_data[0]) #not sure if the absolut of the FFT here is correct

@@ -48,7 +48,7 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 700*10**(-6) # thickness of the probe in SI
+d = 2070*10**(-6) # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -56,11 +56,10 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 #Read the excel file
-data_sam = np.genfromtxt('data/20240409/Si_wafer_rough_700um.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_sam = np.genfromtxt('data/20240409/HDPE_2070um.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
 data_ref = np.genfromtxt('data/20240409/reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 ###################################################################################################################################
-ones = np.ones(10000)
 
 data_ref[:,0] = data_ref[:,0] * 10**(-12) # ps in seconds
 data_sam[:,0] = data_sam[:,0] * 10**(-12)
@@ -99,7 +98,7 @@ print("Delta f = ", " ", Delta_f*10**(-12), "THz")
 ###################################################################################################################################
 #           Filters if wanted  
 ###################################################################################################################################
-filter_0 = True
+filter_0 = False
 if(filter_0):
     x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
     plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
@@ -116,7 +115,7 @@ else:
 freq_ref, amp_ref = FFT_func(data_ref[:,1], data_ref[:,0])  #in Hz
 freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
 
-mask1 = freq_ref < 4.5*10**12 # mask1ed for THz frequency below 4.5 THz
+mask1 = freq_ref < 3*10**12 # mask1ed for THz frequency below 4.5 THz
 amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
@@ -157,7 +156,7 @@ H_0_value_zero = H_0(amp_ref_zero, amp_sam_zero) # complex transfer function
 
 angle_zero = np.angle(H_0_value_zero) #angle between complex numbers
 phase_zero = np.unwrap(angle_zero)  #phase 
-#phase_approx  = linear_approx(freq_ref_zero, phase_zero)[1] * freq_ref + linear_approx(freq_ref_zero, phase_zero)[0]
+phase_approx  = linear_approx(freq_ref, phase)[1] * freq_ref - linear_approx(freq_ref, phase)[0]
 
 ###################################################################################################################################
 #   This block calculates the real and complex part of the refractive index
@@ -190,13 +189,25 @@ alpha_zero = 2*freq_ref_zero*n_im_zero/c
 ###################################################################################################################################
 """For thin samples the Transmission function oscillates because the Thz is reflected inside the sample multiple times.
 Lets see what the frequency of the osciallation is"""
-freq_T, amp_T = FFT_func(H_0_value, freq_ref)
-plot_FFT(freq_T, amp_T, freq_T, amp_T)
+t_T_real, amp_T_real = FFT_func(H_0_value.real, freq_ref)
+t_T_imag, amp_T_imag = FFT_func(H_0_value.imag, freq_ref)
+
+plt.figure()
+plt.plot(t_T_real*10**9, amp_T_real, label='real')
+plt.plot(t_T_imag*10**9, amp_T_imag, label='imag')
+plt.xlabel(r'$ t / ns $')
+plt.ylabel(r'$Fabry Perot$')
+#plt.ylim(0, 500)
+plt.legend()
+plt.grid()
+plt.title('FabryPerot in t i guess')
+plt.savefig('build/FabryPerot_FFT.pdf')
+plt.close()
 ###################################################################################################################################
 #       All the plotting
 ###################################################################################################################################
 
-plotting = False
+plotting = True
 if(plotting):
     print("Plotting...\n")
     plot_Intensity_against_time(data_ref, data_sam)
@@ -205,14 +216,16 @@ if(plotting):
     plot_FFT(freq_ref_zero, amp_ref_zero, freq_sam_zero, amp_sam_zero, zeropadded=True)
     plot_phase_against_freq(freq_ref, phase, angle)
     plot_phase_against_freq(freq_ref_zero, phase_zero, angle_zero, zeropadded=True)
+    plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False, approx=True, phase_approx=phase_approx)
     plot_realpart_refractive_index(freq_ref, n_real)
     plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
     plot_complex_refrective_index(freq_ref, n_im)
     plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
     plot_absorption_coefficient(freq_ref, alpha)
     plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
-    plot_H_0_against_freq(freq_ref, H_0_value)
+    plot_H_0_against_freq(freq_ref, (H_0_value))
     plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
+    plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3.4,3.4], Material))
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
 ###################################################################################################################################
@@ -257,11 +270,11 @@ n_0 = estimater_n(angle, freq_ref, Material, substrate=1)[maxlimit] #intial gues
                                                        #Parameters in Terahertz Time-Domain Spectroscopy
                                                        #Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz"
 k_0 = n_0 # initial guess for k
-h = 0.065 #step size for Newton or rather the gradient/hessian matrix
-num_steps = 1000 # maximum number of steps taken per frequency if the break condition is not
+h = 0.006 #step size for Newton or rather the gradient/hessian matrix
+num_steps = 50000 # maximum number of steps taken per frequency if the break condition is not
 freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
 freq_max_lim = 3*10**12 #upper frequency limit
-FP = True 
+epsilon = 10**-4
 
 ###################################################################################################################################
 steps = np.linspace(1, num_steps, num_steps, dtype=int)
@@ -270,42 +283,94 @@ r_per_step = [None]*(len(steps) + 1)
 r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
 
 r_per_step[0] = r_0
-epsilon = 10**-4
 
 print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
 threshold_n = 0.9
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
 
-for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
-    index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
-    for step in steps:
-        r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
-        r_0 = r_per_step[step]
-        if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
-            break
-        if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
-            r_per_step[step][0] = r_0[0] + kicker_n
-            kicker_n = kicker_n + 0.5
-            #print("kicker used for n, kicker at: ", kicker_n)
-            if(step > 100):
-                step = step - 100 # every time we engage the kicker we give the algo a bit time
-        if(r_per_step[step][1] < threshold_k):
-            r_per_step[step][1] = r_0[1] + kicker_k
-            kicker_k = kicker_k + 0.5
-            #print("kicker used for k, kicker at: ", kicker_k)
-            if(step > 100):
-                step = step - 100 # every time we engage the kicker we give the algo a bit time
-    kicker_n, kicker_k = 0.5, 0.5 # reset kickers
-    r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
-    r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
+
+if(Material.d < 10**-3):
+    """
+    If the material can be considered optically thick we can discard the Fabry Perot factor as reflections inside the material will not travel from on side to the other fast enough.
+    However, if the material is thin we have to take the FP into account which means that we have to find the right value for FP, n and k.
+    For this the idea is:
+        1. estimate n and k roughly (should already be done with the estimator function)
+        2. estimate a FP value 
+        3. Divide H_0 (The transmission function) by FP
+        4. Do the same process as if the material would be thick and find a n and k
+        5. Start the process over until a good value for n and k is found
+    """
+    FP = False
+    for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
+        index = np.argwhere(freq_ref==freq)[0][0]
+        params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
+        for step in steps:
+            Fabry_Perot_value = Fabry_Perot(freq_ref, r_per_step[step - 1], Material)
+            params_delta_function[0] = params_delta_function[0]/Fabry_Perot_value[index] # Divide the H_0_value by the estimated FP factor to get rid of the oscialltions
+            params_delta_function[1] = params_delta_function[1] - np.unwrap(np.angle(Fabry_Perot_value))[index] # Not sure about this one, but it should be necessary to also clean the phase from the Fabry Perot factor and because phase value need to be substracted if the complex number is divide it should work like this
+            r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
+            r_0 = r_per_step[step]
+            params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
+            print(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function))
+            if(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function) < 10): #break condition for when the values seems to be fine
+                break
+            if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
+                r_per_step[step][0] = r_0[0] + kicker_n
+                kicker_n = kicker_n + 0.5
+                #print("kicker used for n, kicker at: ", kicker_n)
+                if(step > 1000):
+                    step = step - 1000 # every time we engage the kicker we give the algo a bit time
+            if(r_per_step[step][1] < threshold_k):
+                r_per_step[step][1] = r_0[1] + kicker_k
+                kicker_k = kicker_k + 0.5
+                #print("kicker used for k, kicker at: ", kicker_k)
+                if(step > 1000):
+                    step = step - 1000 # every time we engage the kicker we give the algo a bit time
+            if(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function) - delta_of_r_whole_frequency_range(r_per_step[step], params=params_delta_function) < 0.1):
+                r_per_step[step][0] = r_0[0] + kicker_n
+                r_per_step[step][1] = r_0[1] + kicker_k
+                kicker_n = kicker_n - 0.2
+                kicker_k = kicker_k - 0.2
+                #print("kicker used for k, kicker at: ", kicker_k)
+                if(step > 1000):
+                    step = step - 1000 # every time we engage the kicker we give the algo a bit time
+        kicker_n, kicker_k = 0.5, 0.5 # reset kickers
+        r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
+        r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
+else:
+    FP = True
+    for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
+        index = np.argwhere(freq_ref==freq)[0][0]
+        params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
+        for step in steps:
+            r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
+            r_0 = r_per_step[step]
+            if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
+                break
+            if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
+                r_per_step[step][0] = r_0[0] + kicker_n
+                kicker_n = kicker_n + 0.5
+                #print("kicker used for n, kicker at: ", kicker_n)
+                if(step > 100):
+                    step = step - 100 # every time we engage the kicker we give the algo a bit time
+            if(r_per_step[step][1] < threshold_k):
+                r_per_step[step][1] = r_0[1] + kicker_k
+                kicker_k = kicker_k + 0.5
+                #print("kicker used for k, kicker at: ", kicker_k)
+                if(step > 100):
+                    step = step - 100 # every time we engage the kicker we give the algo a bit time
+        kicker_n, kicker_k = 0.5, 0.5 # reset kickers
+        r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
+        r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
+
 
 #r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 
 alpha = absorption_coef(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
 
 print("Done")
+
 print("Plotting...")
 plt.figure()
 plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
@@ -314,6 +379,6 @@ plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit]
 
 plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
-plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
+plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n\n' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')

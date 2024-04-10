@@ -6,7 +6,7 @@ from numericsTHz import *
 from mathTHz import *
 from tqdm import tqdm
 from mpl_toolkits.mplot3d import axes3d
-from plot import plot_H_0_against_freq
+from plot import plot_H_0_against_freq, plot_FabryPerot
 """
 Problems to be solved:
     - Unwrapping with just three complex angles doesnt work because if the angles are pos-neg-neg or neg-pos-pos the unwrapping 
@@ -43,7 +43,7 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 380*10**(-6) # thickness of the probe in SI
+d = 0.26*10**(-5) # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -52,8 +52,8 @@ Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_sl
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
 noise = np.random.normal(0,0.00001,len(freq_ref)) + 1j*np.random.normal(0,0.00001,len(freq_ref))
-n_test = np.exp(1.5*np.linspace(1,10,300)) + 2
-k_test = 0.001 * np.linspace(1,5,300) + 0.5
+n_test = 0.4*np.linspace(1,5,300) + 1
+k_test = 0.1 * np.linspace(1,5,300) + 1
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
 
@@ -74,22 +74,21 @@ h = 0.06
 epsilon = 10**-4
 i = 0
 H_0_value = T
-phase = np.abs(np.unwrap(np.angle(T)))
+phase = (np.unwrap(np.angle(T)))
 params = linear_approx(freq_ref, np.unwrap(np.angle(T)))
 phase_approx = params[1]*freq_ref + params[0]
 
+plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3,3], Material))
 
 plt.figure()
 plt.plot(freq_ref, np.unwrap(np.angle(T)), label='unwrapped')
-plt.plot(freq_ref, np.angle(T), label='wrapped')
+#plt.plot(freq_ref, np.angle(T), label='wrapped')
 plt.plot(freq_ref, phase_approx, label="approximation")
 plt.legend()
 plt.xlabel("freq")
 plt.ylabel('phase')
 plt.savefig('build/testing/phase.pdf')
 plt.close()
-
-plot_H_0_against_freq(freq_ref, Fabry_Perot(freq_ref, r_p, Material), True)
 
 r_per_step[0] = r_p
 kicker_n, kicker_k = 0.5, 0.5
@@ -102,7 +101,7 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
         r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
         r_0 = r_per_step[step]
         delta_per_step[step - 1] = delta_of_r_whole_frequency_range(r_per_step[step - 1], params_delta_function)
-        if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
+        if(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function) < epsilon): #break condition for when the values seems to be fine
             break
         if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
             r_per_step[step][0] = r_0[0] + kicker_n

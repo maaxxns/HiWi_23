@@ -30,7 +30,7 @@ def Hessematrix(func, r, params=None, h = 10**(-6)):
     return np.array([[A,B], [C,D]])
 
 def newton_minimizer(func, r, params, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
-    A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p)
+    A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p) 
     grad_ = grad_2D(func,r, params, h) # calculate the gradient of delta(r_p)
     r_p_1 = r - np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))

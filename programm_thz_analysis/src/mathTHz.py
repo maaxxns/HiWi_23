@@ -121,9 +121,9 @@ def Transfer_function(omega, n, k, l, fp):
         return T
 
 def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2, k_3, l, fp):
-    n_1 = n_1_real + 1j*k_1
-    n_2 = n_2_real + 1j*k_2 
-    n_3 = n_3_real + 1j*k_3
+    n_1 = n_1_real - 1j*k_1
+    n_2 = n_2_real - 1j*k_2 
+    n_3 = n_3_real - 1j*k_3
     T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp(-(1j*n_2 - 1j*n_3) * omega*l/c)
     if(fp):
         FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * omega*l/c)))
@@ -132,7 +132,7 @@ def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2,
         return T
     
 def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
-    n_1 = Material.n_1 + 1j*Material.k_1
-    n_2 = r[0] + 1j*r[1] 
-    n_3 = Material.n_3 + 1j*Material.k_3
-    return 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * freq*Material.d/c)))
+    n_1 = Material.n_1 - 1j*Material.k_1
+    n_2 = r[0] - 1j*r[1] 
+    n_3 = Material.n_3 - 1j*Material.k_3
+    return 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 *freq*Material.d/c)))# 
