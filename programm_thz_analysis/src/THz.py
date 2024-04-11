@@ -98,7 +98,7 @@ print("Delta f = ", " ", Delta_f*10**(-12), "THz")
 ###################################################################################################################################
 #           Filters if wanted  
 ###################################################################################################################################
-filter_0 = False
+filter_0 = True
 if(filter_0):
     x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
     plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
@@ -143,7 +143,7 @@ freq_sam_zero = freq_sam_zero[mask1_zero]
 # This block calculates the complex transfer function and does the unwrapping porcess
 ###################################################################################################################################
 
-H_0_value = H_0(amp_ref, amp_sam) # complex transfer function
+H_0_value = amp_sam/amp_ref # complex transfer function
 
 angle = np.angle(H_0_value) #angle between complex numbers
 phase = np.unwrap(angle)  #phase 
@@ -223,7 +223,7 @@ if(plotting):
     plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
     plot_absorption_coefficient(freq_ref, alpha)
     plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
-    plot_H_0_against_freq(freq_ref, (H_0_value))
+    plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
     plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
     plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3.4,3.4], Material))
 ###################################################################################################################################
@@ -339,14 +339,14 @@ if(Material.d < 10**-3):
         r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
         r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
 else:
-    FP = True
+    FP = False
     for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0]
         params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
         for step in steps:
             r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
             r_0 = r_per_step[step]
-            if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
+            if(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function) < 10): #break condition for when the values seems to be fine
                 break
             if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
                 r_per_step[step][0] = r_0[0] + kicker_n

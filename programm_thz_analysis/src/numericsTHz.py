@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
-from mathTHz import gaussian
+from mathTHz import gaussian, Transfer_function_three_slabs
+
 def lin(A, B, x):
     return A*x+B
 
@@ -41,4 +42,8 @@ def linear_approx(x, y): # Fits a linear function into the data set where x is u
     upper_bound = boundaries + boundaries//2
     lower_bound = boundaries - boundaries//2
     params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
+    return params
+
+def Transmission_approx(freq, H_0, r):
+    params, cov = curve_fit(Transfer_function_three_slabs, freq, H_0, r)
     return params

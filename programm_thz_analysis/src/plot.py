@@ -182,8 +182,7 @@ def plot_gaussian(x,y, data):
 def plot_H_0_against_freq(freq, H_0, zeropadded=False):
     if(zeropadded):
         plt.figure()
-        plt.plot(freq, H_0.real, label='real')
-        plt.plot(freq, H_0.imag, label='imag')
+        plt.plot(freq, H_0, label='H_0')
         plt.xlabel(r'$ \omega $')
         plt.ylabel(r'$T$')
         plt.legend()
@@ -193,8 +192,7 @@ def plot_H_0_against_freq(freq, H_0, zeropadded=False):
         plt.close()
     else:
         plt.figure()
-        plt.plot(freq, H_0.real, label='real')
-        plt.plot(freq, H_0.imag, label='imag')
+        plt.plot(freq, H_0, label='H_0')
         plt.xlabel(r'$ \omega $')
         plt.ylabel(r'$T$')
         plt.legend()

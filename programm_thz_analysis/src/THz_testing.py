@@ -43,7 +43,7 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 0.26*10**(-5) # thickness of the probe in SI
+d = 0.26*10**(-3) # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -52,7 +52,7 @@ Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_sl
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
 noise = np.random.normal(0,0.00001,len(freq_ref)) + 1j*np.random.normal(0,0.00001,len(freq_ref))
-n_test = 0.4*np.linspace(1,5,300) + 1
+n_test = np.linspace(2,2,300) + 1
 k_test = 0.1 * np.linspace(1,5,300) + 1
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
@@ -75,7 +75,7 @@ epsilon = 10**-4
 i = 0
 H_0_value = T
 phase = (np.unwrap(np.angle(T)))
-params = linear_approx(freq_ref, np.unwrap(np.angle(T)))
+params = linear_approx(freq_ref, phase)
 phase_approx = params[1]*freq_ref + params[0]
 
 plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3,3], Material))
@@ -118,7 +118,9 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
     delta_per_freq[index] = np.array(delta_per_step)[mask_delta_per_step]
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
     r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
-#r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
+    delta_per_step = [None]*(len(steps))
+##r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
+
 print("Done")
 print("Plotting...")
 plt.figure()
@@ -136,18 +138,17 @@ plt.legend()
 plt.savefig('build/testing/test.pdf')
 
 plt.close()
-plt.figure()
-plt.plot(range(len(delta_per_freq[1])), (delta_per_freq[1]), label='delta 1')
-plt.plot(range(len(delta_per_freq[-2])), (delta_per_freq[-2]), label='delta - 1')
-plt.plot(range(len(delta_per_freq[50])), (delta_per_freq[50]), label='delta 50')
-plt.plot(range(len(delta_per_freq[80])), (delta_per_freq[80]), label='delta 80')
-
-plt.xlabel(r'steps')
-plt.ylabel('delta')
-#plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
-plt.legend()
-plt.savefig('build/testing/delta.pdf')
-plt.close()
+i = 1
+for delta in delta_per_freq[1:-2]:
+    plt.figure()
+    plt.plot(range(len(delta)), delta, label='delta')
+    plt.xlabel(r'steps')
+    plt.ylabel('delta')
+    #plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
+    plt.legend()
+    plt.savefig('build/delta/delta' + str(i) + '.pdf')
+    plt.close()
+    i = i + 1
 
 #########################################################################################################################################################
 #       3 d wireframe plot of dela function
@@ -172,11 +173,11 @@ plt.close()
 #
 #plt.savefig('build/testing/delta3d.pdf')
 
-plt.close()
+#plt.close()
 
 #########################################################################################################################################################
 #########################################################################################################################################################
-
+"""
 # Plots the delta function for one freq value and one k value but differet n values
 # Lets hava a look at the delta function
 delta_test = np.empty(shape=len(n_test[1:-1]))
@@ -195,7 +196,7 @@ plt.savefig('build/testing/delta_func_for_n.pdf')
 #########################################################################################################################################################
 
 # for testing out the minimizer for different function
-"""
+
 def test_function(r, params):
     A = params[0]
     b = params[1] 
@@ -203,9 +204,11 @@ def test_function(r, params):
     return 1/2 * np.array(r).dot(A).dot(np.array(r)) - b.dot(np.array(r)) + c_ 
 
 params = [np.array([[2,-2], [1,2]]), np.array([1,2]), 0]
-
+i = 0
+y = [None]*len(steps)
 for step in steps:
     r_per_step[step] = newton_minimizer(test_function, r_per_step[step - 1], params, h=0.5)
+    y[step] = test_function(r_per_step[step - 1], params)
     i = i + 1
     if(np.abs(r_per_step[step][0] - r_per_step[step-1][0]) < epsilon and np.abs(r_per_step[step][1] - r_per_step[step-1][1]) < epsilon): #break condition for when the values seems to be fine
         break
@@ -213,13 +216,14 @@ for step in steps:
 plt.figure()
 plt.plot(steps[1:i], flatten(r_per_step[1:i])[0::2], label='esti n') # we have to flatten the array before it plots 
 plt.plot(steps[1:i], flatten(r_per_step[1:i])[1::2], label='esti k')
+plt.plot(steps[1:i], y[1:i], label = ("function value"))
 #plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
 
-plt.xlabel(r'$\omega / THz$')
+plt.xlabel(r'$steps$')
 plt.ylabel('value')
 #plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
 plt.legend()
-plt.savefig('build/testing/test.pdf')
+plt.savefig('build/testing/test_function.pdf')
 plt.close()
 B = [None] * i
 for q in range(i):
