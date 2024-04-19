@@ -77,6 +77,7 @@ def plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False, approx=Fal
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\Phi$')
+
         plt.legend()
         plt.grid()
         plt.title('The phase unwarpped and wrapped and approximated')

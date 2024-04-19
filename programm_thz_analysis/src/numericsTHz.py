@@ -18,7 +18,7 @@ def filter_dataset(data):
 def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
-    return [grad_0_x, grad_0_y]
+    return np.array([grad_0_x, grad_0_y])
 
 def Hessematrix(func, r, params=None, h = 10**(-6)):  
     A = (func([r[0] + h, r[1]], params) - 2*func([r[0], r[1]], params) + func([r[0] - h, r[1]], params))/h**2
@@ -30,12 +30,17 @@ def Hessematrix(func, r, params=None, h = 10**(-6)):
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
     return np.array([[A,B], [C,D]])
 
-def newton_minimizer(func, r, params, h=10**(-6)): #newton iteration step to find the best value of r=(n_2,k_2)  
+def newton_minimizer(func, r, params, h=10**(-6), gamma = 1): #newton iteration step to find the best value of r=(n_2,k_2)  
     A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p) 
     grad_ = grad_2D(func,r, params, h) # calculate the gradient of delta(r_p)
-    r_p_1 = r - np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
+    r_p_1 = r - gamma * np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
     # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
+
+def gradient_decent(func, r, params, h = 10**-6, gamma = 1):
+    grad_ = grad_2D(func, r, params, h)
+    r_p_1 = r - gamma*grad_
+    return r_p_1
 
 def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
     boundaries = len(x)//2

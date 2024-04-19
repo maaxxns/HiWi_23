@@ -7,6 +7,7 @@ from mathTHz import *
 from tqdm import tqdm
 from mpl_toolkits.mplot3d import axes3d
 from plot import plot_H_0_against_freq, plot_FabryPerot
+from scipy.optimize import minimize
 """
 Problems to be solved:
     - Unwrapping with just three complex angles doesnt work because if the angles are pos-neg-neg or neg-pos-pos the unwrapping 
@@ -61,12 +62,10 @@ T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True
 n_0 = estimater_n(np.abs(np.unwrap(np.angle(T))), freq_ref, Material)[-1]
 r_p = np.array([n_0,n_0])
 
-steps = np.linspace(1, 12000, 12000, dtype=int)
+steps = np.linspace(1, 1200, 1200, dtype=int)
 
 r_per_freq = [None]*(len(freq_ref))
-r_per_step = [None]*(len(steps) + 1)
 delta_per_freq = [None]*(len(freq_ref))
-delta_per_step = [None]*(len(steps))
 threshold_n = 0.1
 threshold_k = 0.1
 h = 0.06
@@ -90,35 +89,16 @@ plt.ylabel('phase')
 plt.savefig('build/testing/phase.pdf')
 plt.close()
 
-r_per_step[0] = r_p
+r_0 = r_p
 kicker_n, kicker_k = 0.5, 0.5
 FP = True
 
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], phase[index], freq_ref, index,  Material, FP]
-    for step in steps:
-        r_per_step[step] = newton_minimizer(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h)
-        r_0 = r_per_step[step]
-        delta_per_step[step - 1] = delta_of_r_whole_frequency_range(r_per_step[step - 1], params_delta_function)
-        if(delta_of_r_whole_frequency_range(r_per_step[step - 1], params=params_delta_function) < epsilon): #break condition for when the values seems to be fine
-            break
-        if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
-            r_per_step[step][0] = r_0[0] + kicker_n
-            kicker_n = kicker_n + 0.5
-            if(step > 100):
-                step = step - 100 # every time we engage the kicker we give the algo a bit time
-        if(r_per_step[step][1] < threshold_k):
-            r_per_step[step][1] = r_0[1] + kicker_k
-            kicker_k = kicker_k + 0.5
-            if(step > 100):
-                step = step - 100 # every time we engage the kicker we give the algo a bit time
-    kicker_n, kicker_k = 0.5, 0.5 # reset kickers
-    mask_delta_per_step = np.isfinite(np.array(delta_per_step).astype(np.double))
-    delta_per_freq[index] = np.array(delta_per_step)[mask_delta_per_step]
+    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0,None)),args=params_delta_function)
+    r_0 = res.x
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
-    r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
-    delta_per_step = [None]*(len(steps))
 ##r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 
 print("Done")
@@ -139,16 +119,6 @@ plt.savefig('build/testing/test.pdf')
 
 plt.close()
 i = 1
-for delta in delta_per_freq[1:-2]:
-    plt.figure()
-    plt.plot(range(len(delta)), delta, label='delta')
-    plt.xlabel(r'steps')
-    plt.ylabel('delta')
-    #plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
-    plt.legend()
-    plt.savefig('build/delta/delta' + str(i) + '.pdf')
-    plt.close()
-    i = i + 1
 
 #########################################################################################################################################################
 #       3 d wireframe plot of dela function
