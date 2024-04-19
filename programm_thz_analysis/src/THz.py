@@ -309,9 +309,7 @@ FP = True
 for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
-    Hessian = Hessematrix(delta_of_r_whole_frequency_range, r_0, params_delta_function)
-    gradient = grad_2D(delta_of_r_whole_frequency_range, r_0, params_delta_function)
-    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, 10), (0, 5)), args=params_delta_function, hess=Hessematrix, jac=grad_2D, method='trust-exact')
+    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, 10), (0, 5)), args=params_delta_function, hess=Hessematrix_minizer, jac=grad_2D_minizer, method='trust-exact') # minimizer needs gradient as a function and hessematrix of the delta function.
     r_0 = res.x
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 #else:
