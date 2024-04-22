@@ -49,19 +49,19 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 2070*10**(-6) # thickness of the probe in SI
-n_air = 1
-n_slab = 1
-k_slab = 1
+d = 1*10**(-3) # thickness of the probe in SI
+n_air = 1.00028
+n_slab = 1.00028
+k_slab = 1.00028
 
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
-#  HDPE 2070um
-# data/20240409/Si_wafer_rough_700um.txt
+#  HDPE 2070um data/20240409/HDPE_2070um.txt
+# 
 
 #Read the excel file
-data_sam = np.genfromtxt('data/20240409/HDPE_2070um.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('data/20240409/reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+data_sam = np.genfromtxt('data/22_04_24/ZnTe_1mm.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/22_04_24/ref.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 ###################################################################################################################################
 
@@ -74,30 +74,30 @@ data_sam[:,0] = data_sam[:,0] + np.abs(np.min(data_sam[:,0]))
 ##################################################################################################################################
 # Zero_padding
 ##################################################################################################################################
-timestep = np.abs(data_ref[:,0][2]-data_ref[:,0][3]) # minimum time resolution
-N = len(data_ref[:,0]) #number of total data points
-
-num_zeros = 1500
-
-peak_ref,prop = find_peaks(data_ref[:,1], prominence=0.3) # finds the highest peak in the dataset and returns its index
-peak_ref = peak_ref[0:2]
-peak_sam,prop = find_peaks(data_sam[:,1], prominence=0.5)
-peak_sam = peak_sam[0:2]
-peak_sam[1] = peak_sam[1] - 100 # we assume that we cut off the array 50 steps before we hit the post pulse
-
-data_ref_zero = [np.append(data_ref[:peak_sam[1], 0], np.linspace(data_ref[peak_sam[1], 0], data_ref[peak_sam[1], 0]+num_zeros*timestep, num_zeros)),
-                 np.append(data_ref[:peak_sam[1], 1], (np.zeros(num_zeros)))]
-data_sam_zero = [np.append(data_sam[:peak_sam[1], 0], np.linspace(data_sam[peak_sam[1], 0], data_sam[peak_sam[1], 0]+num_zeros*timestep, num_zeros)),
-                 np.append(data_sam[:peak_sam[1], 1], (np.zeros(num_zeros)))]
-
+#timestep = np.abs(data_ref[:,0][2]-data_ref[:,0][3]) # minimum time resolution
+#N = len(data_ref[:,0]) #number of total data points
+#
+#num_zeros = 1500
+#
+#peak_ref,prop = find_peaks(data_ref[:,1], prominence=0.3) # finds the highest peak in the dataset and returns its index
+#peak_ref = peak_ref[0:2]
+#peak_sam,prop = find_peaks(data_sam[:,1], prominence=0.5)
+#peak_sam = peak_sam[0:2]
+#peak_sam[1] = peak_sam[1] - 100 # we assume that we cut off the array 50 steps before we hit the post pulse
+#
+#data_ref_zero = [np.append(data_ref[:peak_sam[1], 0], np.linspace(data_ref[peak_sam[1], 0], data_ref[peak_sam[1], 0]+num_zeros*timestep, num_zeros)),
+#                 np.append(data_ref[:peak_sam[1], 1], (np.zeros(num_zeros)))]
+#data_sam_zero = [np.append(data_sam[:peak_sam[1], 0], np.linspace(data_sam[peak_sam[1], 0], data_sam[peak_sam[1], 0]+num_zeros*timestep, num_zeros)),
+#                 np.append(data_sam[:peak_sam[1], 1], (np.zeros(num_zeros)))]
+#
 ##################################################################################################################################
 # Some necessary calculations on frequency and time resolution
 ##################################################################################################################################
 
-Delta_f = 1/(N*timestep) #frequency resolution
-print('Delta t = ', " ",timestep/10**(-12), "ps")
-print("T ", N*timestep/10**(-12), "ps")
-print("Delta f = ", " ", Delta_f*10**(-12), "THz")
+#Delta_f = 1/(N*timestep) #frequency resolution
+#print('Delta t = ', " ",timestep/10**(-12), "ps")
+#print("T ", N*timestep/10**(-12), "ps")
+#print("Delta f = ", " ", Delta_f*10**(-12), "THz")
 
 ###################################################################################################################################
 #           Filters if wanted  
@@ -119,12 +119,12 @@ else:
 freq_ref, amp_ref = FFT_func(data_ref[:,1], data_ref[:,0])  #in Hz
 freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
 
-mask1 = freq_ref < 3*10**12 # mask1ed for THz frequency below 4.5 THz
+mask1 = freq_ref < 4*10**12 # mask1ed for THz frequency below 4.5 THz
 amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
 freq_sam = freq_sam[mask1]
-mask2 = 200*10**9 < freq_ref # mask1ed for THz frequency above 200 GHz 
+mask2 = 0 < freq_ref # mask1ed for THz frequency above 200 GHz 200*10**9
 amp_ref = amp_ref[mask2]
 amp_sam = amp_sam[mask2]
 freq_ref = freq_ref[mask2]
@@ -134,14 +134,14 @@ freq_sam = freq_sam[mask2]
 ###################################################################################################################################
 # This block applies the FFT to the zero padded data, aswell as masking frequencies that we dont need for the analization
 ###################################################################################################################################
-freq_ref_zero, amp_ref_zero = FFT_func(data_ref_zero[1], data_ref_zero[0])  #in Hz
-freq_sam_zero, amp_sam_zero = FFT_func(data_sam_zero[1], data_sam_zero[0])
-
-mask1_zero = freq_ref_zero < 4.5*10**12 # mask1_zero masks for THz frequency below 4.5 THz
-amp_ref_zero = amp_ref_zero[mask1_zero]
-amp_sam_zero = amp_sam_zero[mask1_zero]
-freq_ref_zero = freq_ref_zero[mask1_zero]
-freq_sam_zero = freq_sam_zero[mask1_zero]
+#freq_ref_zero, amp_ref_zero = FFT_func(data_ref_zero[1], data_ref_zero[0])  #in Hz
+#freq_sam_zero, amp_sam_zero = FFT_func(data_sam_zero[1], data_sam_zero[0])
+#
+#mask1_zero = freq_ref_zero < 4.5*10**12 # mask1_zero masks for THz frequency below 4.5 THz
+#amp_ref_zero = amp_ref_zero[mask1_zero]
+#amp_sam_zero = amp_sam_zero[mask1_zero]
+#freq_ref_zero = freq_ref_zero[mask1_zero]
+#freq_sam_zero = freq_sam_zero[mask1_zero]
 
 ###################################################################################################################################
 # This block calculates the complex transfer function and does the unwrapping porcess
@@ -150,16 +150,16 @@ freq_sam_zero = freq_sam_zero[mask1_zero]
 H_0_value = amp_sam/amp_ref # complex transfer function
 
 angle = np.angle(H_0_value) #angle between complex numbers
-phase = np.abs(np.unwrap(angle))  #phase 
+phase = (np.unwrap(angle))  #phase 
 
 ###################################################################################################################################
 # This block calculates the complex transfer function and does the unwrapping porcess
 ###################################################################################################################################
 
-H_0_value_zero = H_0(amp_ref_zero, amp_sam_zero) # complex transfer function
-
-angle_zero = np.angle(H_0_value_zero) #angle between complex numbers
-phase_zero = np.unwrap(angle_zero)  #phase 
+#H_0_value_zero = H_0(amp_ref_zero, amp_sam_zero) # complex transfer function
+#
+#angle_zero = np.angle(H_0_value_zero) #angle between complex numbers
+#phase_zero = np.unwrap(angle_zero)  #phase 
 phase_approx  = linear_approx(freq_ref, phase)[1] * freq_ref #- linear_approx(freq_ref, phase)[0]
 
 ###################################################################################################################################
@@ -173,8 +173,8 @@ n_im = k(freq_ref, d, H_0_value, n_real)
 #   This block calculates the real and complex part of the refractive index
 ###################################################################################################################################
 
-n_real_zero = n(freq_ref_zero, d, phase_zero)
-n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
+#n_real_zero = n(freq_ref_zero, d, phase_zero)
+#n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
 
 ###################################################################################################################################
 # This block calculates the absorption coefficient and plots it
@@ -186,20 +186,20 @@ alpha = 2*freq_ref *n_im/c
 # This block calculates the absorption coefficient for zero padding and plots it
 ###################################################################################################################################
 
-alpha_zero = 2*freq_ref_zero*n_im_zero/c
+#alpha_zero = 2*freq_ref_zero*n_im_zero/c
 
 ###################################################################################################################################
 #       testing stuff out 
 ###################################################################################################################################
 """For thin samples the Transmission function oscillates because the Thz is reflected inside the sample multiple times.
 Lets see what the frequency of the osciallation is"""
-t_T_real, amp_T_real = FFT_func(H_0_value.real, freq_ref)
-t_T_imag, amp_T_imag = FFT_func(H_0_value.imag, freq_ref)
+t_T_real, amp_T_real = FFT_func(Fabry_Perot(freq_ref, [3, 0.3],Material).real, freq_ref)
+t_T_imag, amp_T_imag = FFT_func(Fabry_Perot(freq_ref, [3, 0.3],Material).imag, freq_ref)
 
 plt.figure()
-plt.plot(t_T_real*10**9, amp_T_real, label='real')
-plt.plot(t_T_imag*10**9, amp_T_imag, label='imag')
-plt.xlabel(r'$ t / ns $')
+plt.plot(t_T_real*10**12, np.abs(amp_T_real), label='real')
+plt.plot(t_T_imag*10**12, np.abs(amp_T_imag), label='imag')
+plt.xlabel(r'$ t / ps $')
 plt.ylabel(r'$Fabry Perot$')
 #plt.ylim(0, 500)
 plt.legend()
@@ -211,24 +211,24 @@ plt.close()
 #       All the plotting
 ###################################################################################################################################
 
-plotting = False
+plotting = True
 if(plotting):
     print("Plotting...\n")
     plot_Intensity_against_time(data_ref, data_sam)
-    plot_Intensity_against_time_zeropadding(data_ref_zero, data_sam_zero)
+    #plot_Intensity_against_time_zeropadding(data_ref_zero, data_sam_zero)
     plot_FFT(freq_ref, amp_ref, freq_ref, amp_sam)
-    plot_FFT(freq_ref_zero, amp_ref_zero, freq_sam_zero, amp_sam_zero, zeropadded=True)
+    #plot_FFT(freq_ref_zero, amp_ref_zero, freq_sam_zero, amp_sam_zero, zeropadded=True)
     plot_phase_against_freq(freq_ref, phase, angle)
-    plot_phase_against_freq(freq_ref_zero, phase_zero, angle_zero, zeropadded=True)
+    #plot_phase_against_freq(freq_ref_zero, phase_zero, angle_zero, zeropadded=True)
     plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False, approx=True, phase_approx=phase_approx)
     plot_realpart_refractive_index(freq_ref, n_real)
-    plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
+    #plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
     plot_complex_refrective_index(freq_ref, n_im)
-    plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
+    #plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
     plot_absorption_coefficient(freq_ref, alpha)
-    plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
+    #plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
-    plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
+    #plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
     plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3.4,3.4], Material))
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
@@ -274,27 +274,23 @@ n_0 = estimater_n(np.abs(angle), freq_ref, Material, substrate=1)[maxlimit] #int
                                                        #Parameters in Terahertz Time-Domain Spectroscopy
                                                        #Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz"
 k_0 = estimater_k(freq_ref, H_0_value, estimater_n(np.abs(angle), freq_ref, Material, substrate=1), Material)[maxlimit] # initial guess for k
-h = 0.01 #step size for Newton or rather the gradient/hessian matrix
-num_steps = 5000 # maximum number of steps taken per frequency if the break condition is not
+h = 0.00001 #step size for Newton or rather the gradient/hessian matrix
 freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
 freq_max_lim = 3*10**12 #upper frequency limit
-epsilon = 10**-4
-n_0 = 3.4
+
 ###################################################################################################################################
-steps = np.linspace(1, num_steps, num_steps, dtype=int)
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k 
-r_per_step = [None]*(len(steps) + 1)
+
 r_per_freq = [None]*len(freq_ref) # all the n and k per frequency will be written into this array
 
-r_per_step[0] = r_0
 
 print("starting values for Newton-Raphson: r_per_step =", r_0, ", h = ", h)
 threshold_n = 0.999
 threshold_k = 0.1
 kicker_n, kicker_k = 0.5, 0.5
 params_delta_rho = [signaltonoise(np.abs(H_0_value)), H_0_value, Material.k_1 + Material.k_3, freq_ref, Material.d/1000]
-params_delta_phi = [signaltonoise(phase), Material.n_1 + Material.n_3, freq_ref, Material.d/1000]
-print("SNR T: ", signaltonoise(np.abs(H_0_value)), "dB, SNR arg(T): ", signaltonoise(phase), "dB")
+params_delta_phi = [signaltonoise(np.abs(phase)), Material.n_1 + Material.n_3, freq_ref, Material.d/1000]
+print("SNR T: ", signaltonoise(np.abs(H_0_value)), "dB, SNR arg(T): ", signaltonoise(np.abs(phase)), "dB")
 """
 If the material can be considered optically thick we can discard the Fabry Perot factor as reflections inside the material will not travel from on side to the other fast enough.
 However, if the material is thin we have to take the FP into account which means that we have to find the right value for FP, n and k.
@@ -305,12 +301,24 @@ For this the idea is:
     4. Do the same process as if the material would be thick and find a n and k
     5. Start the process over until a good value for n and k is found
 """
-FP = True
+FP = False
+
 for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
-    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, 10), (0, 5)), args=params_delta_function, hess=Hessematrix_minizer, jac=grad_2D_minizer, method='trust-exact') # minimizer needs gradient as a function and hessematrix of the delta function.
+    params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
+    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+    # hess=Hessematrix_minizer
     r_0 = res.x
+    if(np.mod(index, 100)==0):
+        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, FP))
+        plt.figure()
+        plt.plot(freq_ref,temp_T, label="T")
+        plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+        plt.xlabel("freq")
+        plt.ylabel("T")
+        plt.legend()
+        plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(index) + ".pdf")
+        plt.close()
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 #else:
 #    FP = False
@@ -354,6 +362,6 @@ plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit]
 
 plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
-plt.title('parameter: epsilon ' + str(epsilon) + ', h ' + str(h) + ', kicker n\n' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
+plt.title('parameter: h ' + str(h) + ', kicker n\n' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')

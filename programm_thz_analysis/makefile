@@ -12,6 +12,7 @@ build:
 	mkdir -p build
 	mkdir -p build/testing
 	mkdir -p build/FFTs
-
+	mkdir -p build/testing/Transfertest_Thz
+	mkdir -p build/testing/transferfunction_test
 clean:
 	rm -r build

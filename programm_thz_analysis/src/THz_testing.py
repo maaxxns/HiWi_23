@@ -44,7 +44,7 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 0.26*10**(-3) # thickness of the probe in SI
+d = 1*10**-3 # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 1
@@ -52,15 +52,18 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
-noise = np.random.normal(0,0.00001,len(freq_ref)) + 1j*np.random.normal(0,0.00001,len(freq_ref))
-n_test = np.linspace(2,2,300) + 1
-k_test = 0.1 * np.linspace(1,5,300) + 1
+noise = np.random.normal(0,0.1,len(freq_ref)) + 1j*np.random.normal(0,0.1,len(freq_ref))
+n_test = 0.00005*np.exp(np.linspace(1,100,300)*0.1) +3.1
+k_test = np.linspace(0.5,1,300)
 
-T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True)
+T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True) + noise
+phase = (np.unwrap(np.angle(T)))
 
 
 n_0 = estimater_n(np.abs(np.unwrap(np.angle(T))), freq_ref, Material)[-1]
-r_p = np.array([n_0,n_0])
+k_0 = estimater_k(freq_ref, T, estimater_n(np.abs(np.angle(T)), freq_ref, Material, substrate=1), Material)[-1] # initial guess for k
+
+r_p = np.array([n_0,k_0])
 
 steps = np.linspace(1, 1200, 1200, dtype=int)
 
@@ -73,11 +76,10 @@ h = 0.06
 epsilon = 10**-4
 i = 0
 H_0_value = T
-phase = (np.unwrap(np.angle(T)))
 params = linear_approx(freq_ref, phase)
 phase_approx = params[1]*freq_ref + params[0]
 
-plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3,3], Material))
+plot_H_0_against_freq(freq_ref, T)
 
 plt.figure()
 plt.plot(freq_ref, np.unwrap(np.angle(T)), label='unwrapped')
@@ -92,12 +94,22 @@ plt.close()
 r_0 = r_p
 kicker_n, kicker_k = 0.5, 0.5
 FP = True
-
+plotting=True
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], phase[index], freq_ref, index,  Material, FP]
+    params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index,  Material, FP]
     res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0,None)),args=params_delta_function)
     r_0 = res.x
+    if(np.mod(index, 100) == 0): 
+        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, True))
+        plt.figure()
+        plt.plot(freq_ref,temp_T, label="T")
+        plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+        plt.xlabel("freq")
+        plt.ylabel("T")
+        plt.legend()
+        plt.savefig("build/testing/transferfunction_test/Transferfunction_iteration_" + str(index) + ".pdf")
+        plt.close()
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 ##r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 

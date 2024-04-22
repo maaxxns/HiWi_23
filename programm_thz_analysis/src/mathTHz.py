@@ -45,7 +45,7 @@ def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness o
 def FFT_func(I, t): # FFT, I the Intensity of the signal as array of size X, t the time value of the signal of size X 
     N = len(t) #number of total data points
     timestep = np.abs(t[2]-t[3]) # the time between each data point
-    FX = fft(I)[:N//2] #the fourier transform of the intensity. 
+    FX = (fft(I)[:N//2]) #the fourier transform of the intensity. 
     FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
     return [FDelay[10:], FX[10:]] # cut of the noise frequency
 
