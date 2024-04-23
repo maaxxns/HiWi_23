@@ -52,9 +52,9 @@ k_slab = 1
 Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
-noise = np.random.normal(0,0.1,len(freq_ref)) + 1j*np.random.normal(0,0.1,len(freq_ref))
+noise = np.random.normal(0,0.001,len(freq_ref)) + 1j*np.random.normal(0,0.001,len(freq_ref))
 n_test = 0.00005*np.exp(np.linspace(1,100,300)*0.1) +3.1
-k_test = np.linspace(0.5,1,300)
+k_test = n_test/2
 
 T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True) + noise
 phase = (np.unwrap(np.angle(T)))
@@ -99,7 +99,7 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index,  Material, FP]
     res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0,None)),args=params_delta_function)
-    r_0 = res.x
+    r_0[0] = res.x[0]
     if(np.mod(index, 100) == 0): 
         temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, True))
         plt.figure()

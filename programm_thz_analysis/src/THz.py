@@ -58,6 +58,7 @@ Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_sl
 
 #  HDPE 2070um data/20240409/HDPE_2070um.txt
 # 
+parameters = np.genfromtxt('data/22_04_24/ZnTe_materialparameters_teramat.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
 
 #Read the excel file
 data_sam = np.genfromtxt('data/22_04_24/ZnTe_1mm.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
@@ -119,17 +120,25 @@ else:
 freq_ref, amp_ref = FFT_func(data_ref[:,1], data_ref[:,0])  #in Hz
 freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
 
-mask1 = freq_ref < 4*10**12 # mask1ed for THz frequency below 4.5 THz
+amp_sam = amp_sam/np.amax(np.abs(amp_ref))
+amp_ref = amp_ref/np.amax(np.abs(amp_ref))
+
+mask1 = freq_ref < 3.5*10**12 # mask1ed for THz frequency below 4.5 THz
 amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
 freq_sam = freq_sam[mask1]
-mask2 = 0 < freq_ref # mask1ed for THz frequency above 200 GHz 200*10**9
+mask2 = 0*10**9 < freq_ref # mask1ed for THz frequency above 200 GHz 200*10**9
 amp_ref = amp_ref[mask2]
 amp_sam = amp_sam[mask2]
 freq_ref = freq_ref[mask2]
 freq_sam = freq_sam[mask2]
 
+
+mask_parameter1 = parameters[:,0] < 3.5
+parameters = parameters[mask_parameter1]
+mask_parameter2 = 0.5 < parameters[:,0] 
+parameters = parameters[mask_parameter2]
 
 ###################################################################################################################################
 # This block applies the FFT to the zero padded data, aswell as masking frequencies that we dont need for the analization
@@ -225,7 +234,7 @@ if(plotting):
     #plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
     plot_complex_refrective_index(freq_ref, n_im)
     #plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
-    plot_absorption_coefficient(freq_ref, alpha)
+    #plot_absorption_coefficient(freq_ref, alpha)
     #plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
     #plot_H_0_against_freq(freq_ref_zero, H_0_value_zero, True)
@@ -240,6 +249,7 @@ print("-----------------------------------------------------------")
 plt.figure()
 plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).real, label='Transferfunction real part')
 plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).imag, label='Transferfunction imag part')
+plt.plot(freq_ref, np.abs(Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True)), label='Transferfunction absolut')
 plt.legend()
 plt.savefig('build/testing/Transferfunction_n_2_k_2.pdf')
 plt.close()
@@ -305,15 +315,22 @@ FP = False
 
 for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
-    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
-    # hess=Hessematrix_minizer
-    r_0 = res.x
+    for i in range(50):    
+        #Fabry_Perot_value = Fabry_Perot(freq_ref, r_0, Material)
+        #Fabry_Perot_phase = np.unwrap(np.angle(Fabry_Perot_value))
+        params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+        if(res.success != True):
+            print("Warning minimizer couldnt terminate: ")
+            print(res.message)
+        # hess=Hessematrix_minizer
+        r_0 = res.x
     if(np.mod(index, 100)==0):
         temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, FP))
         plt.figure()
         plt.plot(freq_ref,temp_T, label="T")
         plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+        plt.title(str(r_0))
         plt.xlabel("freq")
         plt.ylabel("T")
         plt.legend()
@@ -356,8 +373,10 @@ print("Done")
 
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[0::2], label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(np.array(r_per_freq[minlimit:maxlimit])/4.5)[0::2], label='n') # we have to flatten the array before it plots 
 plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
+plt.plot(parameters[:,0], parameters[:,1], label="from tera")
+#plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(np.array(r_per_freq[minlimit:maxlimit])/3.4)[0::2], label='n / 3.4') 
 #plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
 
 plt.xlabel(r'$\omega / THz$')
@@ -365,3 +384,6 @@ plt.ylabel('value')
 plt.title('parameter: h ' + str(h) + ', kicker n\n' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
 plt.savefig('build/testing/frequncy_against_n_k.pdf')
+plt.close()
+
+plot_absorption_coefficient(freq_ref[minlimit:maxlimit], alpha, parameters, False)

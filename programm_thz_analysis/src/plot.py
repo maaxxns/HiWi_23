@@ -144,10 +144,12 @@ def plot_complex_refrective_index(freq_ref, n_im, zeropadded=False):
         plt.savefig('build/THz_complex_index.pdf')
         plt.close()
 
-def plot_absorption_coefficient(freq_ref, alpha, zeropadded=False):
+def plot_absorption_coefficient(freq_ref, alpha, parameters=None, zeropadded=False):
     if(zeropadded):
         plt.figure()
         plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
+        if(parameters != None):
+            plt.plot(parameters[:,0], parameters[:,2], label="absorptioncoeffecient from tera")
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\alpha$')
@@ -159,6 +161,8 @@ def plot_absorption_coefficient(freq_ref, alpha, zeropadded=False):
     else:
         plt.figure()
         plt.plot(freq_ref*10**(-12), alpha/100, label='Absorption coefficient')
+        if(parameters is not None):
+            plt.plot(parameters[:,0], parameters[:,2], label="absorptioncoeffecient from tera")
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\alpha$')

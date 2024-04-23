@@ -12,7 +12,7 @@ def filter_dataset(data):
     x = np.linspace(0,len(data[:,0]),len(data[:,0]))
     # Some test with filters for the dataset
     data[:,1] = data[:,1]#/np.amax(np.abs(data[:,1]))
-    data[:,1] = data[:,1]*gaussian(x, peak, sigma=0.1) # dataset with gaussian filter
+    data[:,1] = data[:,1]*gaussian(x, peak, sigma=0.05) # dataset with gaussian filter
     return data
 
 def grad_2D(func, r, params=None, h = 10**(-6)): 
@@ -65,6 +65,8 @@ def linear_approx(x, y): # Fits a linear function into the data set where x is u
     boundaries = len(x)//2
     upper_bound = boundaries + boundaries//2
     lower_bound = boundaries - boundaries//2
+    upper_bound = lower_bound
+    lower_bound = 1
     params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
     return params
 
