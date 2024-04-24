@@ -52,9 +52,10 @@ class Material_parameters:
 d = 1*10**(-3) # thickness of the probe in SI
 n_air = 1.00028
 n_slab = 1.00028
-k_slab = 1.00028
+k_slab = 0
+k_air= 0
 
-Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
+Material = Material_parameters(d = d, n_1=n_air, k_1=k_air, n_3=n_slab, k_3=k_slab)
 
 #  HDPE 2070um data/20240409/HDPE_2070um.txt
 # 
@@ -107,9 +108,7 @@ filter_0 = False
 if(filter_0):
     x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
     plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
-    data_sam = filter_dataset(data_sam)
-    data_ref = filter_dataset(data_ref)
-    print("Gaussian function used as filter for preprocessing")
+    data_ref, data_sam = filter_dataset(data_ref, data_sam, filter="gaussian")
 else:
     print("No preprocessing filter")
 
@@ -123,7 +122,7 @@ freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
 amp_sam = amp_sam/np.amax(np.abs(amp_ref))
 amp_ref = amp_ref/np.amax(np.abs(amp_ref))
 
-mask1 = freq_ref < 3.5*10**12 # mask1ed for THz frequency below 4.5 THz
+mask1 = freq_ref < 2.5*10**12 # mask1ed for THz frequency below 4.5 THz
 amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
@@ -139,6 +138,11 @@ mask_parameter1 = parameters[:,0] < 3.5
 parameters = parameters[mask_parameter1]
 mask_parameter2 = 0.5 < parameters[:,0] 
 parameters = parameters[mask_parameter2]
+
+##      Normalizing
+
+#amp_sam = amp_sam/np.amax(np.abs(amp_ref))
+#amp_ref = amp_ref/np.amax(np.abs(amp_ref))
 
 ###################################################################################################################################
 # This block applies the FFT to the zero padded data, aswell as masking frequencies that we dont need for the analization
@@ -247,9 +251,9 @@ if(plotting):
 print("-----------------------------------------------------------")
 
 plt.figure()
-plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).real, label='Transferfunction real part')
-plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True).imag, label='Transferfunction imag part')
-plt.plot(freq_ref, np.abs(Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 1, 2, 1, d, True)), label='Transferfunction absolut')
+plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 0, 2, 0, d, True).real, label='Transferfunction real part')
+plt.plot(freq_ref, Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 0, 2, 0, d, True).imag, label='Transferfunction imag part')
+plt.plot(freq_ref, np.abs(Transfer_function_three_slabs(freq_ref, 1 , 2, 1, 0, 2, 0, d, True)), label='Transferfunction absolut')
 plt.legend()
 plt.savefig('build/testing/Transferfunction_n_2_k_2.pdf')
 plt.close()
@@ -260,10 +264,10 @@ test_k = np.linspace(0,10, 1000)
 test_freq_index = 20
 
 plt.figure()
-plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 1, 2, 1, d, True).real, label='Transferfunction n real part')
-plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 1, 2, 1, d, True).imag, label='Transferfunction n complex part')
-plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 1, test_k, 1, d, True).real, label='Transferfunction k real part')
-plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 1, test_k, 1, d, True).imag, label='Transferfunction k complex part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 0, 2, 0, d, True).real, label='Transferfunction n real part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , test_n, 1, 0, 2, 0, d, True).imag, label='Transferfunction n complex part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 0, test_k, 0, d, True).real, label='Transferfunction k real part')
+plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1 , 2, 1, 0, test_k, 0, d, True).imag, label='Transferfunction k complex part')
 
 plt.legend()
 plt.title("Transferfunction at set frequency but different n and k")
@@ -285,8 +289,6 @@ n_0 = estimater_n(np.abs(angle), freq_ref, Material, substrate=1)[maxlimit] #int
                                                        #Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz"
 k_0 = estimater_k(freq_ref, H_0_value, estimater_n(np.abs(angle), freq_ref, Material, substrate=1), Material)[maxlimit] # initial guess for k
 h = 0.00001 #step size for Newton or rather the gradient/hessian matrix
-freq_min_lim = 1*10**12 #lower frequency limit # to be implemnted
-freq_max_lim = 3*10**12 #upper frequency limit
 
 ###################################################################################################################################
 r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k 
@@ -318,7 +320,7 @@ for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through fr
     for i in range(50):    
         #Fabry_Perot_value = Fabry_Perot(freq_ref, r_0, Material)
         #Fabry_Perot_phase = np.unwrap(np.angle(Fabry_Perot_value))
-        params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
+        params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
         res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
         if(res.success != True):
             print("Warning minimizer couldnt terminate: ")
@@ -326,7 +328,7 @@ for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through fr
         # hess=Hessematrix_minizer
         r_0 = res.x
     if(np.mod(index, 100)==0):
-        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, FP))
+        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 0, r_0[1], 0, Material.d, FP))
         plt.figure()
         plt.plot(freq_ref,temp_T, label="T")
         plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")

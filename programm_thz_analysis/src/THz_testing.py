@@ -47,16 +47,16 @@ class Material_parameters:
 d = 1*10**-3 # thickness of the probe in SI
 n_air = 1
 n_slab = 1
-k_slab = 1
+k_slab = 0
 
-Material = Material_parameters(d = d, n_1=n_air, k_1=n_air, n_3=n_slab, k_3=k_slab)
+Material = Material_parameters(d = d, n_1=n_air, k_1=k_slab, n_3=n_slab, k_3=k_slab)
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
 noise = np.random.normal(0,0.001,len(freq_ref)) + 1j*np.random.normal(0,0.001,len(freq_ref))
 n_test = 0.00005*np.exp(np.linspace(1,100,300)*0.1) +3.1
-k_test = n_test/2
+k_test = np.linspace(0.1,0.3,300) 
 
-T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, 1, k_test, 1, d, True) + noise
+T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, k_slab, k_test, k_slab, d, True) + noise
 phase = (np.unwrap(np.angle(T)))
 
 
@@ -130,7 +130,6 @@ plt.legend()
 plt.savefig('build/testing/test.pdf')
 
 plt.close()
-i = 1
 
 #########################################################################################################################################################
 #       3 d wireframe plot of dela function

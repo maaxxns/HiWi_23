@@ -6,21 +6,33 @@ from mathTHz import delta_of_r_whole_frequency_range
 def lin(A, B, x):
     return A*x+B
 
-def filter_dataset(data):
-    peak,prop = find_peaks(data[:,1], prominence=1) # finds the highest peak in the dataset and returns its index
-    peak = peak[0]
-    x = np.linspace(0,len(data[:,0]),len(data[:,0]))
+def filter_dataset(data_ref,data_sam, filter=None): 
+    """
+        takes the signal data and applies filters based on which filter is given.
+        returns the filtered datasets.
+        possible filters are gaussian and truncating
+    """
     # Some test with filters for the dataset
-    data[:,1] = data[:,1]#/np.amax(np.abs(data[:,1]))
-    data[:,1] = data[:,1]*gaussian(x, peak, sigma=0.05) # dataset with gaussian filter
-    return data
+    if(filter == "gaussian"): #puts a gaussian function ontop of the signal peak
+        x = np.linspace(0,len(data_ref[:,0]),len(data_ref[:,0]))
+        peak,prop = find_peaks(data_sam[:,1], prominence=1)
+        data_sam[:,1] = data_sam[:,1]*gaussian(x, peak[0], sigma=0.05) # dataset with gaussian filter
+        peak,prop = find_peaks(data_ref[:,1], prominence=1)
+        data_ref[:,1] = data_ref[:,1]*gaussian(x, peak[0], sigma=0.05)
+    if(filter == "truncate"): # truncates the signal to just include the first peak and some signal after it but not the post pulse
+        peak,prop = find_peaks(data_sam[:,1], height=(None, None), distance=10) # finds the highest peak in the dataset and returns its index
+        second_highest_peak_index = peak[np.argpartition(prop['peak_heights'],-2)[-2]]
+        cut = second_highest_peak_index + len(data_sam)//10 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
+        data_ref = data_ref[:cut] #truncate the signal according to the second peak in the sample data, which should be the post pulse
+        data_sam = data_sam[:cut] #truncate the sample data aswell
+    return data_ref, data_sam
 
 def grad_2D(func, r, params=None, h = 10**(-6)): 
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
     return np.array([grad_0_x, grad_0_y])
 
-def grad_2D_minizer(r, params=None, h = 10**(-6)): 
+def grad_2D_minizer(r, params=None, h =0.0065): 
     func = delta_of_r_whole_frequency_range
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
