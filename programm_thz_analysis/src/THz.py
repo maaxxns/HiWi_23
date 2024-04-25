@@ -58,12 +58,13 @@ k_air= 0
 Material = Material_parameters(d = d, n_1=n_air, k_1=k_air, n_3=n_slab, k_3=k_slab)
 
 #  HDPE 2070um data/20240409/HDPE_2070um.txt
-# 
+# 20240409/Si_wafer_rough_700um
+# data/22_04_24/ZnTe_1mm.txt
 parameters = np.genfromtxt('data/22_04_24/ZnTe_materialparameters_teramat.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
 
 #Read the excel file
-data_sam = np.genfromtxt('data/22_04_24/ZnTe_1mm.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
-data_ref = np.genfromtxt('data/22_04_24/ref.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
+data_sam = np.genfromtxt('data/20240409/SI_wafer_380um.txt', delimiter="	", comments="#") # The time resolved dataset of the probe measurment
+data_ref = np.genfromtxt('data/20240409/reference.txt',  delimiter="	", comments="#") # the time resolved dataset of the reference measurment
 
 ###################################################################################################################################
 
@@ -119,10 +120,10 @@ else:
 freq_ref, amp_ref = FFT_func(data_ref[:,1], data_ref[:,0])  #in Hz
 freq_sam, amp_sam = FFT_func(data_sam[:,1], data_sam[:,0])
 
-amp_sam = amp_sam/np.amax(np.abs(amp_ref))
-amp_ref = amp_ref/np.amax(np.abs(amp_ref))
+#amp_sam = amp_sam/np.amax(np.abs(amp_ref))
+#amp_ref = amp_ref/np.amax(np.abs(amp_ref))
 
-mask1 = freq_ref < 2.5*10**12 # mask1ed for THz frequency below 4.5 THz
+mask1 = freq_ref < 3.5*10**12 # mask1ed for THz frequency below 4.5 THz
 amp_ref = amp_ref[mask1]
 amp_sam = amp_sam[mask1]
 freq_ref = freq_ref[mask1]
@@ -132,6 +133,7 @@ amp_ref = amp_ref[mask2]
 amp_sam = amp_sam[mask2]
 freq_ref = freq_ref[mask2]
 freq_sam = freq_sam[mask2]
+
 
 
 mask_parameter1 = parameters[:,0] < 3.5
@@ -159,47 +161,26 @@ parameters = parameters[mask_parameter2]
 ###################################################################################################################################
 # This block calculates the complex transfer function and does the unwrapping porcess
 ###################################################################################################################################
+plt.figure()
+plt.plot(freq_ref/10**12, np.unwrap(np.angle(amp_ref)), label="phase of reference")
+plt.plot(freq_ref/10**12, np.unwrap(np.angle(amp_sam)), label="phase of sample")
+plt.legend()
+plt.title("The reference and sample phase against frequency")
+plt.xlabel("freq/THz")
+plt.ylabel("Phase/rad")
+plt.savefig("build/ref_sam_phase.pdf")
+plt.close()
 
 H_0_value = amp_sam/amp_ref # complex transfer function
 
 angle = np.angle(H_0_value) #angle between complex numbers
 phase = (np.unwrap(angle))  #phase 
-
+#phase = np.unwrap(np.angle(amp_sam)) - np.unwrap(np.angle(amp_ref)) 
 ###################################################################################################################################
-# This block calculates the complex transfer function and does the unwrapping porcess
-###################################################################################################################################
-
-#H_0_value_zero = H_0(amp_ref_zero, amp_sam_zero) # complex transfer function
-#
-#angle_zero = np.angle(H_0_value_zero) #angle between complex numbers
-#phase_zero = np.unwrap(angle_zero)  #phase 
-phase_approx  = linear_approx(freq_ref, phase)[1] * freq_ref #- linear_approx(freq_ref, phase)[0]
-
-###################################################################################################################################
-#   This block calculates the real and complex part of the refractive index
+# This block makes a linear estimation of the phase
 ###################################################################################################################################
 
-n_real = n(freq_ref, d, phase)
-n_im = k(freq_ref, d, H_0_value, n_real)
-
-###################################################################################################################################
-#   This block calculates the real and complex part of the refractive index
-###################################################################################################################################
-
-#n_real_zero = n(freq_ref_zero, d, phase_zero)
-#n_im_zero = k(freq_ref_zero, d, H_0_value_zero, n_real_zero)
-
-###################################################################################################################################
-# This block calculates the absorption coefficient and plots it
-###################################################################################################################################
-
-alpha = 2*freq_ref *n_im/c 
-
-###################################################################################################################################
-# This block calculates the absorption coefficient for zero padding and plots it
-###################################################################################################################################
-
-#alpha_zero = 2*freq_ref_zero*n_im_zero/c
+phase_approx  = linear_approx(freq_ref, phase)[1] * freq_ref
 
 ###################################################################################################################################
 #       testing stuff out 
@@ -234,9 +215,9 @@ if(plotting):
     plot_phase_against_freq(freq_ref, phase, angle)
     #plot_phase_against_freq(freq_ref_zero, phase_zero, angle_zero, zeropadded=True)
     plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False, approx=True, phase_approx=phase_approx)
-    plot_realpart_refractive_index(freq_ref, n_real)
+    plot_realpart_refractive_index(freq_ref, estimater_n(phase, freq_ref, Material))
     #plot_realpart_refractive_index(freq_ref_zero, n_real_zero, zeropadded=True)
-    plot_complex_refrective_index(freq_ref, n_im)
+    plot_complex_refrective_index(freq_ref, estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material), Material))
     #plot_complex_refrective_index(freq_ref_zero, n_im_zero, zeropadded=True)
     #plot_absorption_coefficient(freq_ref, alpha)
     #plot_absorption_coefficient(freq_ref_zero, alpha_zero, zeropadded=True)
@@ -284,10 +265,10 @@ plt.close()
 minlimit = 1 # lower limit of the frequency range. 1 for no lower limit. optimal 200 GHz
 maxlimit = -2 # upper limit of the frequency range. -2 for no upper limit. optimal 5THz
 
-n_0 = estimater_n(np.abs(angle), freq_ref, Material, substrate=1)[maxlimit] #intial guess for n, calculated as in the paper "A Reliable Method for Extraction of Material
+n_0 = estimater_n(phase, freq_ref, Material, substrate=n_air)[maxlimit] #intial guess for n, calculated as in the paper "A Reliable Method for Extraction of Material
                                                        #Parameters in Terahertz Time-Domain Spectroscopy
                                                        #Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz"
-k_0 = estimater_k(freq_ref, H_0_value, estimater_n(np.abs(angle), freq_ref, Material, substrate=1), Material)[maxlimit] # initial guess for k
+k_0 = estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material, substrate=1), Material)[maxlimit] # initial guess for k
 h = 0.00001 #step size for Newton or rather the gradient/hessian matrix
 
 ###################################################################################################################################
@@ -314,60 +295,57 @@ For this the idea is:
     5. Start the process over until a good value for n and k is found
 """
 FP = False
-
-for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
-    index = np.argwhere(freq_ref==freq)[0][0]
-    for i in range(50):    
-        #Fabry_Perot_value = Fabry_Perot(freq_ref, r_0, Material)
-        #Fabry_Perot_phase = np.unwrap(np.angle(Fabry_Perot_value))
-        params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP]
-        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+if(Material.d > 10**-3):
+    for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
+        index = np.argwhere(freq_ref==freq)[0][0]    
+        params_delta_function = [H_0_value[index - 1:index + 1], phase_approx[index - 1:index + 1], freq_ref, index, Material, FP]
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((0, None), (0, 1)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
         if(res.success != True):
             print("Warning minimizer couldnt terminate: ")
             print(res.message)
-        # hess=Hessematrix_minizer
         r_0 = res.x
-    if(np.mod(index, 100)==0):
-        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 0, r_0[1], 0, Material.d, FP))
-        plt.figure()
-        plt.plot(freq_ref,temp_T, label="T")
-        plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
-        plt.title(str(r_0))
-        plt.xlabel("freq")
-        plt.ylabel("T")
-        plt.legend()
-        plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(index) + ".pdf")
-        plt.close()
-    r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
-#else:
-#    FP = False
-#    for freq in tqdm(reverse_array(freq_ref[minlimit:maxlimit])): #walk through frequency range from upper to lower limit
-#        index = np.argwhere(freq_ref==freq)[0][0]
-#        params_delta_function = [H_0_value[index], phase[index], freq_ref, index, Material, FP]
-#        for step in steps:
-#            r_per_step[step] = gradient_decent(delta_of_r_whole_frequency_range, r_per_step[step - 1], params=params_delta_function, h = h, gamma=0.5)
-#            r_0 = r_per_step[step]
-#            print(delta_of_r_whole_frequency_range(r_0, params_delta_function))
-#            if(delta_delta_rho(r_0[1], index, params_delta_rho) > delta_rho(r_0, params_delta_function) and delta_delta_phi(r_0[0], index, params_delta_phi) > delta_phi(r_0, params_delta_function)): #break condition for when the values seems to be fine
-#                break
-#            if(r_per_step[step][0] < threshold_n): # This is just a savety measure if the initial guess is not good enough
-#                r_per_step[step][0] = r_0[0] + kicker_n
-#                kicker_n = kicker_n + 0.2
-#                #print("kicker used for n, kicker at: ", kicker_n)
-#                if(step > 100):
-#                    step = step - 100 # every time we engage the kicker we give the algo a bit time
-#            if(r_per_step[step][1] < threshold_k):
-#                r_per_step[step][1] = r_0[1] + kicker_k
-#                kicker_k = kicker_k + 0.2
-#                #print("kicker used for k, kicker at: ", kicker_k)
-#                if(step > 100):
-#                    step = step - 100 # every time we engage the kicker we give the algo a bit time
-#        kicker_n, kicker_k = 0.5, 0.5 # reset kickers
-#        r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
-#        r_per_step[0] = r_0 # use the n and k value from the last frequency step as guess for the next frequency
-
-
-#r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
+        if(np.mod(index, 100)==0):
+            temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 0, r_0[1], 0, Material.d, FP))
+            plt.figure()
+            plt.plot(freq_ref,temp_T, label="T")
+            plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("T")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+        r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
+else: # optically thin sample need to be treated differently 
+    for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
+        index = np.argwhere(freq_ref==freq)[0][0]    
+        for i in range(20):
+            #############################################################################################################################################################
+            # Estimation of new H_0 value without the Farby perot value
+            H_0_value_FP_free = H_0_value*inverse_Fabry_Perot(freq_ref, r_0, Material)
+            phase_FP_free = np.unwrap(np.angle(H_0_value_FP_free))
+            phase_approx_FP_free  = linear_approx(freq_ref, phase_FP_free)[1] * freq_ref
+            ########################################################################################################################################################################
+            
+            params_delta_function = [H_0_value_FP_free[index - 1:index + 1], phase_approx_FP_free[index - 1:index + 1], freq_ref, index, Material, FP]
+            res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((0, None), (0, 1)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+            if(res.success != True):
+                print("Warning minimizer couldnt terminate: ")
+                print(res.message)
+            # hess=Hessematrix_minizer
+            r_0 = res.x
+        if(np.mod(index, 100)==0):
+            temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 0, r_0[1], 0, Material.d, FP))
+            plt.figure()
+            plt.plot(freq_ref,temp_T, label="T")
+            plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("T")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+        r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 
 alpha = absorption_coef(freq_ref[minlimit:maxlimit], flatten(r_per_freq[minlimit:maxlimit])[1::2])
 
@@ -375,9 +353,9 @@ print("Done")
 
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(np.array(r_per_freq[minlimit:maxlimit])/4.5)[0::2], label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
-plt.plot(parameters[:,0], parameters[:,1], label="from tera")
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(np.array(r_per_freq[minlimit:maxlimit]))[0::2], label='n') # we have to flatten the array before it plots 
+#plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(r_per_freq[minlimit:maxlimit])[1::2], label='k')
+#plt.plot(parameters[:,0], parameters[:,1], label="from tera")
 #plt.plot(freq_ref[minlimit:maxlimit]/1e12, flatten(np.array(r_per_freq[minlimit:maxlimit])/3.4)[0::2], label='n / 3.4') 
 #plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
 
@@ -385,7 +363,7 @@ plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
 plt.title('parameter: h ' + str(h) + ', kicker n\n' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str([n_0, k_0]))
 plt.legend()
-plt.savefig('build/testing/frequncy_against_n_k.pdf')
+plt.savefig('build/frequncy_against_n_k.pdf')
 plt.close()
 
 plot_absorption_coefficient(freq_ref[minlimit:maxlimit], alpha, parameters, False)

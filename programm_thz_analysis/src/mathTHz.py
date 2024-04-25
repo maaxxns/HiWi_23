@@ -18,33 +18,33 @@ def H_0(data_ref, data_sam): #takes in two spectral amplitudes and dives them to
     return (data_sam/data_ref)
 
 def n(freq, d, phase): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved phase and returns the real refractive index
-    return (1 + (c* phase)/(freq* d) ) #    return (1 - c/(freq* d) *phase)
+    return (1 + (c* np.abs(phase))/( 2*np.pi*freq* d) ) #    return (1 - c/(freq* d) *phase)
 
 def estimater_n(angle_T, omega, Material_parameter, substrate=None):
     if(substrate != None):
-        return substrate + angle_T/(omega*Material_parameter.d/c)
+        return substrate - angle_T/( 2*np.pi*omega*Material_parameter.d/c)
     else: 
-        return 1 + angle_T/(omega*Material_parameter.d/c)
+        return 1 - angle_T/( 2*np.pi*omega*Material_parameter.d/c)
 
 def estimater_k(freq, T_meas, n_2, Material):
     A = (((n_2 - Material.n_1)*(n_2 - Material.n_3))/((n_2 + Material.n_1)*(n_2 + Material.n_3)) * np.cos(2*n_2 * freq * Material.d/c))
     D = ((n_2 + Material.n_1)*(n_2 + Material.n_3))/(2*n_2*(Material.n_1 + Material.n_3)) * np.exp(-Material.k_3*freq*Material.d/c)*T_meas
-    k_2 = np.abs((c * np.log(np.abs(A))/np.log(np.abs(D))))/(4*freq*Material.d) 
+    k_2 = np.abs((c * np.log(np.abs(A))/np.log(np.abs(D))))/(4* 2*np.pi*freq*Material.d) 
     return k_2
 
 def absorption_coef(f, k): # takes complex refractice index at frequency f and returns the absorption coefficient at given frequency
-    return 2*f*k/(100*c)
+    return 2*2*np.pi*f*k/(100*c)
 
 def k(freq, d, H_0, n): # takes in the frequency of the dataset, the thickness of the sample d and the frequency resolved H_0 and returns the complex refractive index
     n_real = n
     ln_a = np.log((4*n_real)/(n_real + 1)**2)
     ln_b = np.log(np.abs(H_0))
-    n_im = c/(freq *d) *(ln_a - ln_b)
+    n_im = c/( 2*np.pi*freq *d) *(ln_a - ln_b)
     return n_im
 
 def FFT_func(I, t): # FFT, I the Intensity of the signal as array of size X, t the time value of the signal of size X 
     N = len(t) #number of total data points
-    timestep = np.abs(t[2]-t[3]) # the time between each data point
+    timestep = np.abs(t[N//2 + 1]-t[N//2]) # the time between each data point
     FX = (fft(I)[:N//2]) #the fourier transform of the intensity. 
     FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
     return [FDelay[10:], FX[10:]] # cut of the noise frequency
@@ -62,7 +62,7 @@ def difference_measured_calc(r, params):
     and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
     """ #if needed n_1, n_3 and k_1, k_3 can also be added 
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, FP)
-    phase_calc = np.abs(np.unwrap(np.angle(H_0_calc)))
+    phase_calc = (np.unwrap(np.angle(H_0_calc)))
     return np.abs(H_0_calc[index]-H_0_measured) + np.abs(phase_calc[index] - phase_mes)
 
 def delta_of_r_whole_frequency_range(r, params):
@@ -79,8 +79,8 @@ def delta_phi(r, params):
     FP = params[5]
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, FP)
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
-    phase_0 = np.unwrap(angle_0)[index]  #phase 
-    return phase_0 - phase_mes
+    phase_0 = np.unwrap(angle_0)[index - 1:index + 1]  #phase 
+    return np.sum(phase_0 - phase_mes)
 
 def delta_rho(r, params):
     n = r[0]
@@ -92,15 +92,15 @@ def delta_rho(r, params):
     Material_parameter = params[4]
     FP = params[5]
     H_0_calc = Transfer_function_three_slabs(freq, Material_parameter.n_1 ,n, Material_parameter.n_3, Material_parameter.k_1, k, Material_parameter.k_3, Material_parameter.d, FP)
-    return np.array([np.log(np.abs(H_0_calc[index])) - np.log(np.abs(H_0_measured))])[0]
+    return np.sum([np.log(np.abs(H_0_calc[index - 1:index + 1])) - np.log(np.abs(H_0_measured))])
    
 def Transfer_function_three_slabs(omega, n_1_real, n_2_real, n_3_real, k_1, k_2, k_3, l, fp):
     n_1 = n_1_real - 1j*k_1
     n_2 = n_2_real - 1j*k_2
     n_3 = n_3_real - 1j*k_3
-    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp(-(1j*n_2 - n_3*1j) * omega*l/c)
+    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp((-1j*n_2 + n_3*1j) * 2*np.pi*omega*l/c)
     if(fp):
-        FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * omega*l/c)))
+        FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * 2*np.pi* omega*l/c)))
         return T*FP
     else:
         return T
@@ -109,7 +109,15 @@ def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a give
     n_1 = Material.n_1 - 1j*Material.k_1
     n_2 = r[0] - 1j*r[1] 
     n_3 = Material.n_3 - 1j*Material.k_3
-    return 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 *freq*Material.d/c)))# 
+    return 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * 2*np.pi*freq*Material.d/c)))# 
+
+def inverse_Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
+    n_1 = Material.n_1 - 1j*Material.k_1
+    n_2 = r[0] - 1j*r[1] 
+    n_3 = Material.n_3 - 1j*Material.k_3
+    return (1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * 2*np.pi*freq*Material.d/c)))# 
+
+
 
 def Transmissionfunction_curvefit(freq, H_0, p_0):
     params, cov = curve_fit(Transfer_function_three_slabs, freq, H_0, p_0)

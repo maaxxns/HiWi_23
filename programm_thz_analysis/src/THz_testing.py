@@ -8,6 +8,7 @@ from tqdm import tqdm
 from mpl_toolkits.mplot3d import axes3d
 from plot import plot_H_0_against_freq, plot_FabryPerot
 from scipy.optimize import minimize
+from scipy.stats import bootstrap
 """
 Problems to be solved:
     - Unwrapping with just three complex angles doesnt work because if the angles are pos-neg-neg or neg-pos-pos the unwrapping 
@@ -43,7 +44,7 @@ class Material_parameters:
     k_3: float
 
 # The thickness of the probe
-
+rng = np.random.default_rng()
 d = 1*10**-3 # thickness of the probe in SI
 n_air = 1
 n_slab = 1
@@ -53,10 +54,15 @@ Material = Material_parameters(d = d, n_1=n_air, k_1=k_slab, n_3=n_slab, k_3=k_s
 
 freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
 noise = np.random.normal(0,0.001,len(freq_ref)) + 1j*np.random.normal(0,0.001,len(freq_ref))
-n_test = 0.00005*np.exp(np.linspace(1,100,300)*0.1) +3.1
+
+
+n_test = np.linspace(1,1.5,300) + 3.1
 k_test = np.linspace(0.1,0.3,300) 
 
-T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, k_slab, k_test, k_slab, d, True) + noise
+
+
+T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, k_slab, k_test, k_slab, d, True) 
+
 phase = (np.unwrap(np.angle(T)))
 
 
@@ -93,7 +99,7 @@ plt.close()
 
 r_0 = r_p
 kicker_n, kicker_k = 0.5, 0.5
-FP = True
+FP = False
 plotting=True
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
