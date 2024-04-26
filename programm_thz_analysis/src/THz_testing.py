@@ -23,16 +23,6 @@ Problems to be solved:
     3. find a better unwrapping 
 
     for now I use solution 2
-
-    Problem 2
-    - Noise seems to be a problem if its introcude into the Transmittion function somehow?
-        I still get good results when I just introduce noise into the n and k value
-
-    Idea to solve it:
-    1. The paper uses a linear approximation of the phase in terms of frequency.
-       approx in the middle of the frequency range and shift the linear function, if necessary towards (0,0).
-            - I dont really like this approach because the phase carries a lot of information but I guess if the probe is homogenous it should be fine.
-
 """
 
 @dataclass
