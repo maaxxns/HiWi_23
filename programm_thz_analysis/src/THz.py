@@ -293,3 +293,22 @@ with open('build/results/' + file_name + '_results.csv', 'w') as file:
 
 plot_epsilon(freq_ref[minlimit:maxlimit], epsilon_1, epsilon_2)
 plot_sigma(freq_ref[minlimit:maxlimit], sigma_1, sigma_2)
+
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2, layout="constrained")
+ax1.plot(freq_ref[minlimit:maxlimit]/1e12, n, label='n')
+ax1.plot(freq_ref[minlimit:maxlimit]/1e12, k, label='k')
+ax1.set_xlabel(r"$\omega/THz$")
+ax1.set_title("n and k")
+
+ax2.plot(freq_ref[minlimit:maxlimit], epsilon_1, label = r"$real\, part\,\epsilon$")
+ax2.plot(freq_ref[minlimit:maxlimit], epsilon_2,label=r"$complex\, part\,\epsilon$")
+ax2.set_xlabel(r"$\omega/THz$")
+ax2.set_title(r"$ \epsilon$")
+
+ax3.plot(freq_ref[minlimit:maxlimit], sigma_1, label = r"$real\, part\,\sigma$")
+ax3.plot(freq_ref[minlimit:maxlimit], sigma_2,label=r"$complex\, part\,\sigma$")
+ax3.set_xlabel(r"$\omega/THz$")
+ax3.set_title(r"$ simga$")
+
+fig.savefig("build/n_k_epsi_sigma.pdf")
+plt.close(fig)
