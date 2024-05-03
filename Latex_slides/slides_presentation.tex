@@ -47,7 +47,7 @@
 
 \title{Determining the dielectric function through THz-Transmission measurments}
 \author[M.~Koch]{Max Koch}
-\institute[AG Wang]{Arbeitsgruppe Wang \\  Fakultät Physik}
+\institute[AG Wang]{Group Wang \\  faculty Physics}
 %\titlegraphic{\includegraphics[width=0.3\textwidth, angle=90]{images/setup.jpeg}}
 
 
@@ -78,9 +78,25 @@ if the material is nonmagnetic.\\
 \textcolor{tugreen}{Fundamentals of measurement in terahertz time-domain spectroscopy} from Withayachumnankul, J Infrared Millim Terahertz Waves, \textbf{35} (2014) 
 \end{frame}
 
+\begin{frame}
+  Additional one can calculate the optical conductivity \
+  \begin{equation}
+    \sigma_s  = \sigma_1 + i \sigma_2 
+  \end{equation}
+  from the real part of the refractive index 
+  \begin{equation}
+    \sigma_1 = \frac{n \kappa \omega}{2\pi}
+  \end{equation}
+  aswell as the complex part of the optical conductivity from the complex part of the refractive index
+  \begin{equation}
+    \sigma_2 = \left( 1 - n^2 - \kappa^2\right) \frac{\omega}{4\pi}
+  \end{equation}
+  \textcolor{tugreen}{Electrodynamics of Solids: Optical Properties of Electrons in Matter} from Dressel, M. and Grüner, G. Cambridge University Press, \textbf{2} (2002) 
+\end{frame}
+
 \section{Scheme}
 \begin{frame}{Scheme}
-  Lets first take a look at the experimental scheme first proposed by\\
+  Lets take a look at the experimental scheme\\
   \begin{center}
     \includegraphics[width=0.5\textwidth]{images/Transmission.pdf}
 \end{center}
@@ -148,105 +164,184 @@ The refractive index of the surrounding medium is $\eta$ in case of air $\eta\ap
   \end{frame}
 
 \begin{frame}{Extracting phase}
-  We can't solve $H_0$ analyticly so one way is to assume that $n_s \approx n$.\\
+  We can't solve $H_0$ analyticly, leaving us with two options.
+  One way is to assume that $n_s \approx n$.\\
   This simplifies to 
   \begin{equation}
     H(\omega) = \frac{4n(\omega)}{(n(\omega) + 1)^2} \symup{exp}\left[-\kappa(\omega) \frac{\omega l }{c}\right] \symup{exp}\left[- i(n(\omega) - 1) \frac{\omega l}{c}\right]
-\end{equation}
+  \end{equation}
   of which the phase
   \begin{equation}
     \Phi(H(\omega)) = -[n(\omega) - 1] \frac{\omega l}{c}
-\end{equation}
-and the logarithm is
-\begin{equation}
+  \end{equation}
+  and the logarithm is
+  \begin{equation}
     \symup{ln}|H(\omega)| = \symup{ln}\left[ \frac{4n(\omega)}{(n(\omega) +1)^2}\right] - \kappa(\omega) \frac{\omega l}{c} \, .
-\end{equation}
+  \end{equation}
 alternatively Numerical approximations can be used.\\
 \textcolor{tugreen}{Fundamentals of measurement in terahertz time-domain spectroscopy} from Withayachumnankul, J Infrared Millim Terahertz Waves, \textbf{35} (2014)\\
 \textcolor{tugreen}{A reliable method for extraction of material parameters in terahertz time-domain spectroscopy} from Duvillaret, IEEE, \textbf{2} (1996)
 \end{frame}
 
-\begin{frame}{Determining the refractive index}
-  We can now determine $n$ and $\kappa$
+\section{Numerical approximation}
+\begin{frame}{Numerical approximation}
+  If disregarding $\kappa$ is no option, the numerical sultion needs to be employed.
+  To do so we define a root finding problem 
   \begin{equation}
-    n(\omega) = 1 - \frac{c}{\omega l} \Phi(H(\omega))
+    \Delta(H(\omega)) \overset{!}{=} 0 = H_0(n, \kappa, \omega) - H_\text{meas}(\omega)
   \end{equation}
-  and the complex refractive index 
+  However, this root finding problem isn't smooth nor monotonous.
+  To overcome this problem we define a error function 
   \begin{equation}
-    \kappa(\omega) = \frac{c}{\omega l } \left( \symup{ln}\left[ \frac{4 n(\omega)}{(n(\omega) + 1)^2}\right] - \symup{ln}|H(\omega)|\right)
+    \delta(n, \kappa) = \delta \phi^2 + \delta \rho^2
   \end{equation}
-  from which the absorption coeffiecient
-  \begin{equation}
-    \alpha(\omega) = \frac{2 \omega \kappa(\omega)}{c}
-  \end{equation}
-  can be calculated.
-  Note that a special unwrapping process is necessary to determine $\Phi(H(\omega))$, in python \textit{numpy.unwrap()} can be used to do this.
+  with the two variables 
+  \begin{align}
+    \delta \phi(\omega) &= \symup{ln}(\left| H_0(\omega, n , \kappa)\right|) - \symup{ln}(\left| H_\text{meas}(\omega, n , \kappa)\right|) \\
+    \delta \rho(\omega) &= \Phi(H_0(\omega, n , \kappa)) - \Phi(H_\text{meas}(\omega, n , \kappa))
+  \end{align}
+  where $\Phi(H(\omega))$ is the phase of the Transferfunction.
 \end{frame}
 
-\begin{frame}{Example data}
-  By using the discussed methods a reference dataset is analyzed.
-  The measured data is plotted below 
-  \begin{center}
-    \begin{columns}
-      \begin{column}{0.5\textwidth}
-        \begin{figure}
-          \includegraphics[width=0.8\textwidth]{images/THz1.pdf}
-          \caption{Some transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
-        \end{figure}
-      \end{column}
-      \begin{column}{0.5\textwidth}
-        \begin{figure}
-          \includegraphics[width=0.8\textwidth]{images/THz4_1.pdf}
-          \caption{The FFT of the transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
-        \end{figure}
-      \end{column}
-    \end{columns}
-  \end{center}
+\begin{frame}{Linearization and unwrapping of phase}
+  % I need to minimize text here and put some more figures.
+  % for now its just so that I dont forget what I want to say at this slide.
+  Before we can minimize the delta function we have to extract the phase $\Phi(H_0(\omega, n, \kappa))$ of the Transferfunction.
+  As we assume that the material is completly homogenous the phase should be a linear function starting from zero.
+  In reality this is not the case, as the phase calculated from $H_\text{meas}(\omega, n, \kappa)$ is a function varying between $-\pi$ and $\pi$.
+  To make it continous, the values need to be $2\pi$ shifted every time a phase jump would occure.
+  Even with the unwrapping the phase is usually not completly linear.
+  So we approximation the phase by a linear function and shifted to cross zero as $\omega=0$.
+  We are left with a linear phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$.
 \end{frame}
 
-\begin{frame}{Refractive index}
-  The refractive index is then determined by the Quotient of Transmission and reference data in frequency space.
+\begin{frame}{Minimizing the error function}
+  Now we can start to minimize $\delta(n, \kappa)$.
+  From its definition one can see that it's formulated like a paraboloid.
   \begin{equation}
-    n(\omega) = 1 - \frac{c}{\omega l} \Phi(H(\omega))
+    \delta(n, \kappa) = \delta(\vec{r}) = \frac{1}{2} \vec{r} A\vec{r} - \vec{b} \vec{r} + c
   \end{equation}
-  The result can be seen below:
-  \begin{center}
-    \begin{figure}
-      \includegraphics[width=0.5\textwidth]{images/THz5_1.pdf}
-      \caption{The refractive index of Teflon as calculated by the equation shown above.}
-    \end{figure}
-  \end{center}
-\end{frame}
-
-\begin{frame}{Absorption coeffiecient}
-  The absorption coeffiecient is then determined by
+  where $\vec{r} = \begin{pmatrix} n\\ \kappa \end{pmatrix}$ defines the position on the plane.
+  This means if one can find the $\vec{r}_0$ that corresponds to the minimum value of the paraboloid a good solution to
   \begin{equation}
-    \alpha(\omega) = \frac{2 \omega \kappa(\omega)}{c}
+    \Delta(H(\omega)) \overset{!}{=} 0 = H_0(n, \kappa, \omega) - H_\text{meas}(\omega)
   \end{equation}
-  where $\kappa$ is the complex refractive index, which is determined by 
+  is found.
+\end{frame}
+
+\begin{frame}
+  There are several ways to minimize a two dimensonial function. The most common would be the Newton-Raphson-method
   \begin{equation}
-    \kappa(\omega) = \frac{c}{\omega l } \left( \symup{ln}\left[ \frac{4 n(\omega)}{(n(\omega) + 1)^2}\right] - \symup{ln}|H(\omega)|\right)
+    \vec{r}_{p + 1} = \vec{r}_{p} - H^{-1}(n,\kappa)\cdot\vec{\nabla}\delta(n, \kappa) \, .
   \end{equation}
-  The result can be seen below:
-  \begin{center}
-    \begin{figure}
-      \includegraphics[width=0.4\textwidth]{images/THz6.pdf}
-      \caption{The absorption coeffiecient of Teflon as calculated by the equation shown above.}
-    \end{figure}
-  \end{center}
+  However, this algorythm doesn't work with boundaries and as $n \geq 1$ its usually faster to use a different algorythm.
+  I choose to use the $L-BFGS-B$ as an easy to use python implementation already exists, it considers bounds and is usually faster than the Newton-Raphson-method.
+  In any case a solution $\vec{r}_0$ should be found after a few iterations.
+  If the sultion $\vec{r}_0$ for one frequency $\omega$ is determined  we can move on to the next.
+  Usually it's best to start from high frequency and move down to low as the noise is lower at high frequencies.
+  The determined value $\vec{r}_0$ from the previous step, is used as starting point for the next minimization.\\
+  \textcolor{tugreen}{A Limited Memory Algorithm for Bound Constrained Optimization} from Byrd, Richard H., SIAM, \textbf{16} (1995)
 \end{frame}
 
-\begin{frame}{Phase}
-  Just as a reference we can also plot the phase.
-  The result can be seen below:
-  \begin{center}
-    \begin{figure}
-      \includegraphics[width=0.5\textwidth]{images/THzPhase.pdf}
-      \caption{The Phase of Teflon as calculated by the equation shown above.}
-    \end{figure}
-  \end{center}
+\begin{frame}{Thick sample solution}
+  To summarize the steps we already took:
+  \begin{itemize}
+    \item[1.] Measure probe and reference data 
+    \item[2.] Calculate Transferfunction $H_0(\omega)$
+    \item[3.] Determine the phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$
+    \item[4.] Linearise phase
+    \item[5.] Minimize $\delta(\omega, n, \kappa)$ starting from high frequencies
+    \item[6.] Use solution of previous step $\vec{r}_0$ as starting point for next step 
+  \end{itemize}
 \end{frame}
 
+\section{Thin samples}
+\begin{frame}{Thin sample solution}
+As optically thin samples reflect the THz-wave and transmitt it after a whole pass they need to be treated different.\\
+To take these reflections into account we have to cosider some additional effects.\\
+These effects are caused by the Farby-Perot factor.
+\end{frame}
+
+%\begin{frame}{Determining the refractive index}
+%  We can now determine $n$ and $\kappa$
+%  \begin{equation}
+%    n(\omega) = 1 - \frac{c}{\omega l} \Phi(H(\omega))
+%  \end{equation}
+%  and the complex refractive index 
+%  \begin{equation}
+%    \kappa(\omega) = \frac{c}{\omega l } \left( \symup{ln}\left[ \frac{4 n(\omega)}{(n(\omega) + 1)^2}\right] - \symup{ln}|H(\omega)|\right)
+%  \end{equation}
+%  from which the absorption coeffiecient
+%  \begin{equation}
+%    \alpha(\omega) = \frac{2 \omega \kappa(\omega)}{c}
+%  \end{equation}
+%  can be calculated.
+%  Note that a special unwrapping process is necessary to determine $\Phi(H(\omega))$, in python \textit{numpy.unwrap()} can be used to do this.
+%\end{frame}
+
+%\begin{frame}{Example data}
+%  By using the discussed methods a reference dataset is analyzed.
+%  The measured data is plotted below 
+%  \begin{center}
+%    \begin{columns}
+%      \begin{column}{0.5\textwidth}
+%        \begin{figure}
+%          \includegraphics[width=0.8\textwidth]{images/THz1.pdf}
+%          \caption{Some transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
+%        \end{figure}
+%      \end{column}
+%      \begin{column}{0.5\textwidth}
+%        \begin{figure}
+%          \includegraphics[width=0.8\textwidth]{images/THz4_1.pdf}
+%          \caption{The FFT of the transmission data of Teflon foil, with a thickness of $\SI{0.25}{\milli\meter}$.}
+%        \end{figure}
+%      \end{column}
+%    \end{columns}
+%  \end{center}
+%\end{frame}
+
+%\begin{frame}{Refractive index}
+%  The refractive index is then determined by the Quotient of Transmission and reference data in frequency space.
+%  \begin{equation}
+%    n(\omega) = 1 - \frac{c}{\omega l} \Phi(H(\omega))
+%  \end{equation}
+%  The result can be seen below:
+%  \begin{center}
+%    \begin{figure}
+%      \includegraphics[width=0.5\textwidth]{images/THz5_1.pdf}
+%      \caption{The refractive index of Teflon as calculated by the equation shown above.}
+%    \end{figure}
+%  \end{center}
+%\end{frame}
+
+%\begin{frame}{Absorption coeffiecient}
+%  The absorption coeffiecient is then determined by
+%  \begin{equation}
+%    \alpha(\omega) = \frac{2 \omega \kappa(\omega)}{c}
+%  \end{equation}
+%  where $\kappa$ is the complex refractive index, which is determined by 
+%  \begin{equation}
+%    \kappa(\omega) = \frac{c}{\omega l } \left( \symup{ln}\left[ \frac{4 n(\omega)}{(n(\omega) + 1)^2}\right] - \symup{ln}|H(\omega)|\right)
+%  \end{equation}
+%  The result can be seen below:
+%  \begin{center}
+%    \begin{figure}
+%      \includegraphics[width=0.4\textwidth]{images/THz6.pdf}
+%      \caption{The absorption coeffiecient of Teflon as calculated by the equation shown above.}
+%    \end{figure}
+%  \end{center}
+%\end{frame}
+
+%\begin{frame}{Phase}
+%  Just as a reference we can also plot the phase.
+%  The result can be seen below:
+%  \begin{center}
+%    \begin{figure}
+%      \includegraphics[width=0.5\textwidth]{images/THzPhase.pdf}
+%      \caption{The Phase of Teflon as calculated by the equation shown above.}
+%    \end{figure}
+%  \end{center}
+%\end{frame}
 
 \begin{frame}{Fabry-Perot factor}
   Now lets take a look at the reflections inside the probe.
@@ -282,31 +377,49 @@ alternatively Numerical approximations can be used.\\
   \end{equation}
 \end{frame}
 
-\begin{frame}{2D-Materials}
-  The last "challenge": Thin materials.
-  Substrate influences the measurment.
-  The result is a signal from the substrate and a very weak signal from the 2D-material.
-  \begin{figure}
-    \includegraphics[width=0.5\textwidth]{images/2d.pdf}
-    \caption{The Probe is applied onto a substrate that also alters the intial THz-wave.}
-  \end{figure}
+\begin{frame}{Considering FP in numerical approximation}
+  To consider the Fabry-Perot factor we first have to determine its value.\\
+  So the first iteration step, with starting value $\vec{r}_1$ is the same as for thick samples.
+  \begin{equation}
+    \vec{r}_p = A^p \vec{r}_1
+  \end{equation}  
+  where $A$ is the matrix so that 
+  \begin{equation}
+    \symup{min} \left[ \delta(r)\right] = \delta(A^\infty \vec{r}_1)
+  \end{equation}
+  at a specific frequency $\omega$.
+  After a good solution $\vec{r}_0$ is found we plug it into the Fabry-Perot factor
+  \begin{equation}
+    FP(\vec{r}_0, \omega) = \left[1 - \rho'^2 \cdot \symup(exp)\left(- 2 i (n(\omega) - \kappa(\omega))\frac{\omega l }{c}\right)\right]^{-1}
+  \end{equation}
 \end{frame}
 
-\begin{frame}
-  For this we have to consider the transmission coeffiecients $t(\omega)$ of both mediums.
-  Aswell as reflections inside the medium.
-  We can write the transmitted THz-wave as
-  \begin{equation}
-    E_\text{t} '(\omega) = \eta t_\text{Probe}(\omega) t_\text{Sub}(\omega)FP(\omega)E_0(\omega)
-  \end{equation}
-  where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
-  The complex transfer function $H_0'$ can then be writen as 
-  \begin{equation}
-    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
-  \end{equation}
-  \textcolor{tugreen}{Time-Resolved Terahertz Spectroscopy Studies on 2D Van der Waals Materials} from Peng Han, Adv. Opt. Mater. \textbf{8} (2020).
-\end{frame}
 
+%\begin{frame}{2D-Materials}
+%  The last "challenge": Thin materials.
+%  Substrate influences the measurment.
+%  The result is a signal from the substrate and a very weak signal from the 2D-material.
+%  \begin{figure}
+%    \includegraphics[width=0.5\textwidth]{images/2d.pdf}
+%    \caption{The Probe is applied onto a substrate that also alters the intial THz-wave.}
+%  \end{figure}
+%\end{frame}
+%
+%\begin{frame}
+%  For this we have to consider the transmission coeffiecients $t(\omega)$ of both mediums.
+%  Aswell as reflections inside the medium.
+%  We can write the transmitted THz-wave as
+%  \begin{equation}
+%    E_\text{t} '(\omega) = \eta t_\text{Probe}(\omega) t_\text{Sub}(\omega)FP(\omega)E_0(\omega)
+%  \end{equation}
+%  where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
+%  The complex transfer function $H_0'$ can then be writen as 
+%  \begin{equation}
+%    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
+%  \end{equation}
+%  \textcolor{tugreen}{Time-Resolved Terahertz Spectroscopy Studies on 2D Van der Waals Materials} from Peng Han, Adv. Opt. Mater. \textbf{8} (2020).
+%\end{frame}
+%
 \section{conclusion}
 \begin{frame}{Refractive index}
   \begin{center}
