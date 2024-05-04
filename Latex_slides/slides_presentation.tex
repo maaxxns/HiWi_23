@@ -64,7 +64,7 @@ Goal: determine the refractive index \
 with real part $n$ and complex part $\kappa$ of the refractive index.
 Then determine the dielectric function 
 \begin{equation}
-  \epsilon = \epsilon_1 + \epsilon_2
+  \epsilon = \epsilon_1 - i\epsilon_2 = n_s ^2
 \end{equation}
 of which
 \begin{equation}
@@ -81,7 +81,7 @@ if the material is nonmagnetic.\\
 \begin{frame}
   Additional one can calculate the optical conductivity \
   \begin{equation}
-    \sigma_s  = \sigma_1 + i \sigma_2 
+    \sigma_s  = \sigma_1 - i \sigma_2 
   \end{equation}
   from the real part of the refractive index 
   \begin{equation}
@@ -206,27 +206,56 @@ alternatively Numerical approximations can be used.\\
 \begin{frame}{Linearization and unwrapping of phase}
   % I need to minimize text here and put some more figures.
   % for now its just so that I dont forget what I want to say at this slide.
-  Before we can minimize the delta function we have to extract the phase $\Phi(H_0(\omega, n, \kappa))$ of the Transferfunction.
-  As we assume that the material is completly homogenous the phase should be a linear function starting from zero.
-  In reality this is not the case, as the phase calculated from $H_\text{meas}(\omega, n, \kappa)$ is a function varying between $-\pi$ and $\pi$.
-  To make it continous, the values need to be $2\pi$ shifted every time a phase jump would occure.
-  Even with the unwrapping the phase is usually not completly linear.
-  So we approximation the phase by a linear function and shifted to cross zero as $\omega=0$.
-  We are left with a linear phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$.
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
+      The phase $\Phi(H_0(\omega, n, \kappa))$ of the Transferfunction has to be extracted.
+      Should be linear and homogenous.
+      But it varies between $-\pi$ and $\pi$. And noise makes it sometimes hard to unwrap.\\
+      To make it continous, the values need to be $2\pi$ shifted every time a phase jump would occure.
+      So we approximation the phase by a linear function and shifted to cross zero as $\omega=0$.\\
+      We are left with a linear phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$.
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \begin{figure}
+        \only<1>{\centering\includegraphics[width=0.8\textwidth]{images/THzPhase.pdf}}
+        \only<2>{\centering\includegraphics[width=0.8\textwidth]{images/THzPhase_approximation.pdf}}
+      \end{figure}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Minimizing the error function}
   Now we can start to minimize $\delta(n, \kappa)$.
   From its definition one can see that it's formulated like a paraboloid.
   \begin{equation}
+    \delta(n, \kappa) = \delta \phi^2 + \delta \rho^2
+  \end{equation}
+  \begin{equation}
     \delta(n, \kappa) = \delta(\vec{r}) = \frac{1}{2} \vec{r} A\vec{r} - \vec{b} \vec{r} + c
   \end{equation}
   where $\vec{r} = \begin{pmatrix} n\\ \kappa \end{pmatrix}$ defines the position on the plane.
-  This means if one can find the $\vec{r}_0$ that corresponds to the minimum value of the paraboloid a good solution to
+  This means if one can find the $\vec{r}_{min}$ that corresponds to the minimum value of the paraboloid a good solution to
   \begin{equation}
     \Delta(H(\omega)) \overset{!}{=} 0 = H_0(n, \kappa, \omega) - H_\text{meas}(\omega)
   \end{equation}
   is found.
+\end{frame}
+
+\begin{frame}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{centering}
+        \includegraphics[width=\textwidth]{images/Transmissionfunction.pdf}
+        {The transferfunction for ZnTe.}
+      \end{centering}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{centering}
+        \includegraphics[width=\textwidth]{images/delta.png}
+        {The deltafunction for one $\omega$ and some testvalues for $H_\text{meas}$.}
+      \end{centering}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}
@@ -236,10 +265,10 @@ alternatively Numerical approximations can be used.\\
   \end{equation}
   However, this algorythm doesn't work with boundaries and as $n \geq 1$ its usually faster to use a different algorythm.
   I choose to use the $L-BFGS-B$ as an easy to use python implementation already exists, it considers bounds and is usually faster than the Newton-Raphson-method.
-  In any case a solution $\vec{r}_0$ should be found after a few iterations.
-  If the sultion $\vec{r}_0$ for one frequency $\omega$ is determined  we can move on to the next.
+  In any case a solution $\vec{r}_{min}$ should be found after a few iterations.
+  If the sultion $\vec{r}_{min}$ for one frequency $\omega$ is determined  we can move on to the next.
   Usually it's best to start from high frequency and move down to low as the noise is lower at high frequencies.
-  The determined value $\vec{r}_0$ from the previous step, is used as starting point for the next minimization.\\
+  The determined value $\vec{r}_{min}$ from the previous step, is used as starting point for the next minimization.\\
   \textcolor{tugreen}{A Limited Memory Algorithm for Bound Constrained Optimization} from Byrd, Richard H., SIAM, \textbf{16} (1995)
 \end{frame}
 
@@ -248,10 +277,10 @@ alternatively Numerical approximations can be used.\\
   \begin{itemize}
     \item[1.] Measure probe and reference data 
     \item[2.] Calculate Transferfunction $H_0(\omega)$
-    \item[3.] Determine the phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$
+    \item[3.] Determine the phase $\Phi(H_\text{meas}(\omega, n, \kappa))$
     \item[4.] Linearise phase
     \item[5.] Minimize $\delta(\omega, n, \kappa)$ starting from high frequencies
-    \item[6.] Use solution of previous step $\vec{r}_0$ as starting point for next step 
+    \item[6.] Use solution of previous step $\vec{r}_{min}$ as starting point for next step 
   \end{itemize}
 \end{frame}
 
@@ -365,7 +394,7 @@ These effects are caused by the Farby-Perot factor.
   \begin{align*}
     E_\text{t}(\omega) \,=\,& \tau \tau' \symup{exp} \left[-i n_s(\omega) \frac{\omega l }{c}\right] \\
                         & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -3 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -5 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
-                        \,=\,& \tau \tau' \symup(exp)\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
+                        \,=\,& \tau \tau' \symup{exp}\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
   \end{align*}
   where $\rho'$ is the complex reflection coeffiecient of the probe
   \begin{equation}
@@ -373,7 +402,7 @@ These effects are caused by the Farby-Perot factor.
   \end{equation}
   and $FP(\omega)$ is the Fabry-Perot Factor, which can be expressed as 
   \begin{equation}
-    FP(\omega) = \left[1 - \rho'^2 \cdot \symup(exp)\left(- 2 i n_s(\omega )\frac{\omega l }{c}\right)\right]^{-1}
+    FP(\omega) = \left[1 - \rho'^2 \cdot \symup{exp}\left(- 2 i n_s(\omega )\frac{\omega l }{c}\right)\right]^{-1}
   \end{equation}
 \end{frame}
 
@@ -383,15 +412,78 @@ These effects are caused by the Farby-Perot factor.
   \begin{equation}
     \vec{r}_p = A^p \vec{r}_1
   \end{equation}  
-  where $A$ is the matrix so that 
+  where $A$ is the matrix so that follows
   \begin{equation}
     \symup{min} \left[ \delta(r)\right] = \delta(A^\infty \vec{r}_1)
   \end{equation}
   at a specific frequency $\omega$.
-  After a good solution $\vec{r}_0$ is found we plug it into the Fabry-Perot factor
+  After a good solution $\vec{r}_p$ is found we plug it into the Fabry-Perot factor
   \begin{equation}
-    FP(\vec{r}_0, \omega) = \left[1 - \rho'^2 \cdot \symup(exp)\left(- 2 i (n(\omega) - \kappa(\omega))\frac{\omega l }{c}\right)\right]^{-1}
+    FP(\vec{r}_p, \omega) = \left[1 - \rho'^2 \cdot \symup(exp)\left(- 2 i (n(\omega) - \kappa(\omega))\frac{\omega l }{c}\right)\right]^{-1}
   \end{equation}
+\end{frame}
+
+\begin{frame}
+  With the estimation of the FP factor we can now adjust the transferfunction function 
+  \begin{equation}
+    \hat{H}_\text{meas} = \frac{H_\text{meas}}{FP(\vec{r}_0, \omega)}
+  \end{equation}
+  and then use it to calculate another minimization solution
+  \begin{equation}
+    \vec{r}_p = \hat{A}^p \vec{r}_1
+  \end{equation}
+  where $\hat{A}$ is the matrix that solves 
+  \begin{equation}
+    \symup{min} \left[ \delta(r)\right] = \delta(\hat{A}^\infty \vec{r}_1)
+  \end{equation}
+  to find a new estimation $\vec{\hat{r_p}}$.
+\end{frame}
+
+\begin{frame}{Break condition}
+  The question is now when one should stop.
+  For I use 
+  \begin{equation}
+    p_\text{max} = 20
+  \end{equation}
+  meaning that I take 20 iteration to determine the FP-factor after accepting the solution $\vec{r}_p$ for the refractive index.
+  A more elegant way would be to have a break condition that considers the maximum experimental uncertainty.
+  We can determine these by the calculating the total differential of $\delta \rho$ and $\delta \phi$.
+  Depeding on the setup they would look similar to 
+  \begin{align}
+    \Delta \delta \rho =& \frac{\Delta(\left|H_\text{meas}(\omega)\right|)}{\left|H_\text{meas}\right|} + \left|\kappa - \kappa_\text{air}\right| \frac{\omega}{c} \Delta l \\
+    \Delta \delta \phi =& \Delta(\Phi(H_\text{meas})) + \left| n - n_\text{air} \right| \frac{\omega}{c} \Delta l
+  \end{align}
+  where $\Delta(\left|H_\text{meas}(\omega)\right|)$ is the uncertainties of the transfer function, $\Delta(\Phi(H_\text{meas}))$ the uncertainty of the phase of the transfer function and $\Delta l$ the uncertainty of the thickness of the probe.
+  If $\delta \rho$ and $\delta \phi$ are now considerably smaller than there uncertainties, we can finish the extraction process.
+\end{frame}
+
+\begin{frame}{Whole scheme}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      Lets summarize the steps
+      \begin{itemize}
+        \item[1.] Measure probe and reference data 
+        \item[2.] Calculate Transferfunction $H_0(\omega)$
+        \item[3.] Determine the phase $\Phi(H_\text{meas}(\omega, n, \kappa))$
+        \item[4.] Linearise phase
+        \item[5.] Minimize $\delta(\omega, n, \kappa)$ to get solution $\vec{r}_p$
+        \begin{itemize}
+          \item[a)] Use solution $\vec{r}_p$ to calculate $FP$-factor 
+          \item[b)] Divide transferfunction by $FP$ to get $\hat{H}_\text{meas}$
+          \item[c)] start over at step 3. 
+        \end{itemize}
+        \item[6.] Use solution of previous step $\vec{r}_{min}$ as starting point for next step 
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{figure}
+        \includegraphics[width=0.5\textwidth]{images/procedure_fp.jpg}
+        \caption{The schematic procedure of extracting the refractive index from thin samples. Note that $n_2, \kappa_2$ are the refractive indices.}
+      \end{figure}
+      \textcolor{tugreen}{A Reliable Method for Extraction of Material Parameters in Terahertz Time-Domain Spectroscopy} from Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz,IEEE \textbf{2} (1996).
+  \end{column}
+\end{columns}
+
 \end{frame}
 
 

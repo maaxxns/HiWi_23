@@ -294,7 +294,7 @@ with open('build/results/' + file_name + '_results.csv', 'w') as file:
 plot_epsilon(freq_ref[minlimit:maxlimit], epsilon_1, epsilon_2)
 plot_sigma(freq_ref[minlimit:maxlimit], sigma_1, sigma_2)
 
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2, layout="constrained")
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
 ax1.plot(freq_ref[minlimit:maxlimit]/1e12, n, label='n')
 ax1.plot(freq_ref[minlimit:maxlimit]/1e12, k, label='k')
 ax1.set_xlabel(r"$\omega/THz$")

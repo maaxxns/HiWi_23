@@ -72,8 +72,8 @@ def plot_phase_against_freq(freq_ref, phase, angle, zeropadded=False, approx=Fal
     elif(approx):
         plt.figure()
         plt.plot(freq_ref*10**(-12),phase, label='phase unwrapped')
-        plt.plot(freq_ref*10**(-12),phase_approx, label='phase approximation')
         plt.plot(freq_ref*10**(-12),angle, label='angle directly from H_0')
+        plt.plot(freq_ref*10**(-12),phase_approx, label='phase approximation')
         #plt.plot(data_ref[:,0], filter_ref)
         plt.xlabel(r'$ \omega/THz $')
         plt.ylabel(r'$\Phi/rad$')
