@@ -15,7 +15,7 @@ class Material_parameters:
     d: float
     n_1: float
     k_1: float 
-    n_3: float 
+    n_3: np.array 
     k_3: float
 
 """
@@ -48,19 +48,19 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 1*10**(-3) # thickness of the probe in SI
+d = 13.5*10**(-9) # thickness of the probe in SI
 n_air = 1.00028
-n_slab = 1.00028
-k_slab = 0
+n_slab = np.linspace(4.6, 5, 134) 
+k_slab = np.linspace(0, 0.05, 134)
 k_air= 0
 
 Material = Material_parameters(d = d, n_1=n_air, k_1=k_air, n_3=n_slab, k_3=k_slab)
-file_name = "data/22_04_24/ZnTe_1mm.txt" # filename of the measured data
-ref_file_name = 'data/22_04_24/ref.txt' # filename of the reference data
+file_name = "data/Ca3Co3O8_purged/A_RT_B_RT_Ca3Co3O8.txt" # filename of the measured data
+ref_file_name = 'data/Ca3Co3O8_purged/ref_substrate.txt' # filename of the reference data
 comparison_data_file_name = "data/22_04_24/ZnTe_materialparameters_teramat.txt" # filename of the comaprison data
 
-max_freq = 3.5*10**12
-min_freq = 0*10**9
+max_freq = 1.6*10**12
+min_freq = 0*10**12
 
 FP = False # Choose if the FabryPerot factor is included in the Transmission function
             # usually for thin samples its better to divide the measured data by the FarbyPerot factor, so in general I never put FP on True
@@ -68,7 +68,8 @@ FP = False # Choose if the FabryPerot factor is included in the Transmission fun
 
 plotting = True # just for plots of measured data, the n k, epsilon and sigma plots will always be made
 comparison_parameter = False # if False no comparison data will be red in
-
+filter_0 = True
+filter_type = "truncate"
 #  HDPE 2070um data/20240409/HDPE_2070um.txt
 # 20240409/Si_wafer_rough_700um
 # data/22_04_24/ZnTe_1mm.txt
@@ -96,11 +97,10 @@ data_sam[:,0] = data_sam[:,0] + np.abs(np.min(data_sam[:,0]))
 ###################################################################################################################################
 #           Filters if wanted  
 ###################################################################################################################################
-filter_0 = False
 if(filter_0):
     x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
     plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
-    data_ref, data_sam = filter_dataset(data_ref, data_sam, filter="gaussian")
+    data_ref, data_sam = filter_dataset(data_ref, data_sam, filter=filter_type)
 else:
     print("No preprocessing filter")
 
@@ -157,8 +157,6 @@ if(plotting):
     plot_realpart_refractive_index(freq_ref, estimater_n(phase, freq_ref, Material))
     plot_complex_refrective_index(freq_ref, estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material), Material))
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
-    plot_FabryPerot(freq_ref, Fabry_Perot(freq_ref, [3.4,3.4], Material))
-    plot_Transferfunction_with_specific_n_k(freq_ref, Material)
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
 ###################################################################################################################################
@@ -198,7 +196,7 @@ if(Material.d >= 10**-3): # If the probe is thick enough (in generall 1mm should
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0] # as we walk though the freq reverse we also have to walk through the other parameters in reverse. So we need to find the corrct index
         params_delta_function = [H_0_value[index - 1:index + 1], phase_approx[index - 1:index + 1], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
-        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((0, None), (0, 1)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((None, None), (None, None)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
         if(res.success != True): # if the minimizer cant minize we output an error message
             print("Warning minimizer couldnt terminate: ")
             print(res.message)
@@ -228,13 +226,13 @@ else: # optically thin sample need to be treated differently
             ########################################################################################################################################################################
             
             params_delta_function = [H_0_value_FP_free[index - 1:index + 1], phase_approx_FP_free[index - 1:index + 1], freq_ref, index, Material, FP]
-            res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((0, None), (0, 1)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+            res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
             if(res.success != True):
                 print("Warning minimizer couldnt terminate: ")
                 print(res.message)
             # hess=Hessematrix_minizer
             r_0 = res.x
-        if(np.mod(index, 100)==0):
+        if(np.mod(index, 10)==0):
             temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, FP))
             plt.figure()
             plt.plot(freq_ref,temp_T, label="T")
@@ -244,6 +242,36 @@ else: # optically thin sample need to be treated differently
             plt.ylabel("T")
             plt.legend()
             plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            plt.figure()
+            plt.plot(freq_ref,temp_T, label="T")
+            plt.plot(freq_ref, np.abs(H_0_value_FP_free), label="FP free H_0")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("H_0/FP")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/FP_freeH_0" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            plt.figure()
+            plt.plot(freq_ref,phase_FP_free, label="phase FP free")
+            plt.plot(freq_ref, phase_approx_FP_free, label="approx phase FP free")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("Phi")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/Phaseat" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            plt.figure()
+            plt.plot(freq_ref,(Fabry_Perot(freq, r_0, Material)).real, label="FP real")
+            plt.plot(freq_ref,(Fabry_Perot(freq, r_0, Material)).imag, label="FP imag")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("FP")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/FPat" + str(freq_ref[index]/10**12) + ".pdf")
             plt.close()
         r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 
@@ -295,6 +323,7 @@ plot_epsilon(freq_ref[minlimit:maxlimit], epsilon_1, epsilon_2)
 plot_sigma(freq_ref[minlimit:maxlimit], sigma_1, sigma_2)
 
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+plt.tight_layout()
 ax1.plot(freq_ref[minlimit:maxlimit]/1e12, n, label='n')
 ax1.plot(freq_ref[minlimit:maxlimit]/1e12, k, label='k')
 ax1.set_xlabel(r"$\omega/THz$")

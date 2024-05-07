@@ -168,7 +168,7 @@ def plot_absorption_coefficient(freq_ref, alpha, parameters=None, zeropadded=Fal
         plt.ylabel(r'$\alpha/cm$')
         plt.legend()
         plt.grid()
-        plt.title('The absorption coeffiecient of silicon')
+        plt.title('The absorption coeffiecient')
         plt.savefig('build/THz_absorption.pdf')
         plt.close()
 
@@ -257,8 +257,10 @@ def plot_epsilon(freq, epsilon_1, epsilon_2):
 
 def plot_sigma(freq, sigma1, sigma2):
     plt.figure()
-    plt.plot(freq/10**12, sigma1, label=r'$real\, part\, \sigma$')
-    plt.plot(freq/10**12, sigma2, label=r'$complex\, part\, \sigma$')
+    plt.plot(freq/10**12, np.abs(sigma1), label=r'$real\, part\, \sigma$')
+    plt.plot(freq/10**12, np.abs(sigma2), label=r'$complex\, part\, \sigma$')
+    plt.yscale('log')
+    plt.xscale('log')
     plt.xlabel(r'$ \omega/THz $')
     plt.ylabel(r'$\sigma$')
     plt.legend()

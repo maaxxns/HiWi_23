@@ -103,7 +103,7 @@ def Transfer_function_three_slabs(omega, n_2_real, k_2, Material_parameter, FP):
     n_1 = Material_parameter.n_1 - 1j*Material_parameter.k_1
     n_2 = n_2_real - 1j*k_2
     n_3 = Material_parameter.n_3 - 1j*Material_parameter.k_3
-    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp((-1j*n_2 + n_3*1j) * 2*np.pi*omega*Material_parameter.d/c)
+    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp((-1j*n_2 + n_1*1j) * 2*np.pi*omega*Material_parameter.d/c)
     if(FP):
         FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * 2*np.pi* omega*Material_parameter.d/c)))
         return T*FP

@@ -14,17 +14,20 @@ def filter_dataset(data_ref,data_sam, filter=None):
     """
     # Some test with filters for the dataset
     if(filter == "gaussian"): #puts a gaussian function ontop of the signal peak
+        data_ref[:,1] = data_ref[:,1]/np.amax(np.abs(data_ref[:,1]))
+        data_sam[:,1] = data_sam[:,1]/np.amax(np.abs(data_ref[:,1]))
         x = np.linspace(0,len(data_ref[:,0]),len(data_ref[:,0]))
-        peak,prop = find_peaks(data_sam[:,1], prominence=1)
-        data_sam[:,1] = data_sam[:,1]*gaussian(x, peak[0], sigma=0.05) # dataset with gaussian filter
-        peak,prop = find_peaks(data_ref[:,1], prominence=1)
-        data_ref[:,1] = data_ref[:,1]*gaussian(x, peak[0], sigma=0.05)
+        peak_sam,prop = find_peaks(data_sam[:,1], prominence=1)
+        peak_ref,prop = find_peaks(data_ref[:,1], prominence=1)
+        data_sam[:,1] = data_sam[:,1]*gaussian(x, peak_sam[0], sigma=0.05) # dataset with gaussian filter
+        data_ref[:,1] = data_ref[:,1]*gaussian(x, peak_ref[0], sigma=0.05)
     if(filter == "truncate"): # truncates the signal to just include the first peak and some signal after it but not the post pulse
         peak,prop = find_peaks(data_sam[:,1], height=(None, None), distance=10) # finds the highest peak in the dataset and returns its index
         second_highest_peak_index = peak[np.argpartition(prop['peak_heights'],-2)[-2]]
-        cut = second_highest_peak_index + len(data_sam)//10 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
-        data_ref = data_ref[:cut] #truncate the signal according to the second peak in the sample data, which should be the post pulse
-        data_sam = data_sam[:cut] #truncate the sample data aswell
+        cut = second_highest_peak_index - len(data_sam)//8 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
+        data_ref[cut:,1] = np.zeros(len(data_ref[cut:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse. And substitute the values with zeros
+        data_sam[cut:,1] = np.zeros(len(data_sam[cut:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse
+         #truncate the sample data aswell
     return data_ref, data_sam
 
 def grad_2D(func, r, params=None, h = 10**(-6)): 
@@ -75,10 +78,8 @@ def gradient_decent(func, r, params, h = 10**-6, gamma = 1):
 
 def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
     boundaries = len(x)//2
-    upper_bound = boundaries + boundaries//2
-    lower_bound = boundaries - boundaries//2
-    upper_bound = lower_bound
-    lower_bound = 1
+    upper_bound = boundaries + int(boundaries/1.2)
+    lower_bound = boundaries - int(boundaries/1.2)
     params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
     return params
 
