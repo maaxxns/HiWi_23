@@ -14,19 +14,27 @@ def filter_dataset(data_ref,data_sam, filter=None):
     """
     # Some test with filters for the dataset
     if(filter == "gaussian"): #puts a gaussian function ontop of the signal peak
-        data_ref[:,1] = data_ref[:,1]/np.amax(np.abs(data_ref[:,1]))
-        data_sam[:,1] = data_sam[:,1]/np.amax(np.abs(data_ref[:,1]))
+        normalizer = np.amax(np.abs(data_ref[:,1]))
+        data_ref[:,1] = data_ref[:,1]/normalizer
+        data_sam[:,1] = data_sam[:,1]/normalizer
         x = np.linspace(0,len(data_ref[:,0]),len(data_ref[:,0]))
-        peak_sam,prop = find_peaks(data_sam[:,1], prominence=1)
-        peak_ref,prop = find_peaks(data_ref[:,1], prominence=1)
-        data_sam[:,1] = data_sam[:,1]*gaussian(x, peak_sam[0], sigma=0.05) # dataset with gaussian filter
-        data_ref[:,1] = data_ref[:,1]*gaussian(x, peak_ref[0], sigma=0.05)
+        peak_sam = np.argmax(data_sam[:,1])
+        peak_ref = np.argmax(data_ref[:,1])
+        data_sam[:,1] = data_sam[:,1]*gaussian(x, peak_sam, sigma=0.05) # dataset with gaussian filter
+        data_ref[:,1] = data_ref[:,1]*gaussian(x, peak_ref, sigma=0.05)
     if(filter == "truncate"): # truncates the signal to just include the first peak and some signal after it but not the post pulse
-        peak,prop = find_peaks(data_sam[:,1], height=(None, None), distance=10) # finds the highest peak in the dataset and returns its index
-        second_highest_peak_index = peak[np.argpartition(prop['peak_heights'],-2)[-2]]
-        cut = second_highest_peak_index - len(data_sam)//8 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
-        data_ref[cut:,1] = np.zeros(len(data_ref[cut:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse. And substitute the values with zeros
-        data_sam[cut:,1] = np.zeros(len(data_sam[cut:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse
+        #peak_sam,prop = find_peaks(data_sam[:,1], height=(None, np.argmax(data_sam[:,1])/1.2))# finds the highest peak in the dataset and returns its index
+        #peak_ref,prop = find_peaks(data_ref[:,1], height=(None, np.argmax(data_ref[:,1])/1.2)) # finds the highest peak in the dataset and returns its index
+        #second_highest_peak_index_sam = peak_sam[np.argpartition(prop['peak_heights'],-2)[-1]]
+        #second_highest_peak_index_ref = peak_ref[np.argpartition(prop['peak_heights'],-2)[-1]]
+        peak_ref = np.argmax(data_ref[:,1])
+        peak_sam = np.argmax(data_sam[:,1])
+        t = np.abs(data_ref[10,0] - data_ref[11,0])
+        width_peak = int((4*10**(-12))/t)
+        cut_ref = peak_ref + width_peak #- len(data_sam)//1 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
+        cut_sam = peak_sam + width_peak #- len(data_ref)//1 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
+        data_ref[cut_ref:,1] = np.zeros(len(data_ref[cut_ref:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse. And substitute the values with zeros
+        data_sam[cut_sam:,1] = np.zeros(len(data_sam[cut_sam:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse
          #truncate the sample data aswell
     return data_ref, data_sam
 
@@ -62,7 +70,6 @@ def Hessematrix_minizer(r, params=None, h = 10**(-6)):
     # B = d²delta(r_p)/dkdn = (delta(n + h/2, k + h/2) - delta(n + h/2, k - h/2) - delta(n - h/2, k + h/2)  + delta(n - h/2, k - h/2))/h²
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
     return np.array([[A,B], [C,D]])
-
 
 def newton_minimizer(func, r, params, h=10**(-6), gamma = 1): #newton iteration step to find the best value of r=(n_2,k_2)  
     A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p) 

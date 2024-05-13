@@ -260,7 +260,6 @@ def plot_sigma(freq, sigma1, sigma2):
     plt.plot(freq/10**12, np.abs(sigma1), label=r'$real\, part\, \sigma$')
     plt.plot(freq/10**12, np.abs(sigma2), label=r'$complex\, part\, \sigma$')
     plt.yscale('log')
-    plt.xscale('log')
     plt.xlabel(r'$ \omega/THz $')
     plt.ylabel(r'$\sigma$')
     plt.legend()
