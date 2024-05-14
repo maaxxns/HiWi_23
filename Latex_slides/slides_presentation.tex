@@ -483,7 +483,31 @@ These effects are caused by the Farby-Perot factor.
       \textcolor{tugreen}{A Reliable Method for Extraction of Material Parameters in Terahertz Time-Domain Spectroscopy} from Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz,IEEE \textbf{2} (1996).
   \end{column}
 \end{columns}
+\end{frame}
 
+\begin{frame}{2D-Materials}
+  The last "challenge": Thin materials.
+  Substrate influences the measurment.
+  The result is a signal from the substrate and a very weak signal from the 2D-material.
+  \begin{figure}
+    \includegraphics[width=0.5\textwidth]{images/2d.pdf}
+    \caption{The Probe is applied onto a substrate that also alters the intial THz-wave.}
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  For this we have to consider the transmission coeffiecients $t(\omega)$ of both mediums.
+  Aswell as reflections inside the medium.
+  We can write the transmitted THz-wave as
+  \begin{equation}
+    E_\text{t} '(\omega) = \eta t_\text{Probe}(\omega) t_\text{Sub}(\omega)FP(\omega)E_0(\omega)
+  \end{equation}
+  where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
+  The complex transfer function $H_0'$ can then be writen as 
+  \begin{equation}
+    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
+  \end{equation}
+  \textsc{\textcolor{tugreen}{Time-Resolved Terahertz Spectroscopy Studies on 2D Van der Waals Materials} from Peng Han, Adv. Opt. Mater. \textbf{8} (2020).}
 \end{frame}
 
 \section{Results}
@@ -533,38 +557,49 @@ These effects are caused by the Farby-Perot factor.
   \end{columns}
 \end{frame}
 
-\begin{frame}{2D-Materials}
-  The last "challenge": Thin materials.
-  Substrate influences the measurment.
-  The result is a signal from the substrate and a very weak signal from the 2D-material.
-  \begin{figure}
-    \includegraphics[width=0.5\textwidth]{images/2d.pdf}
-    \caption{The Probe is applied onto a substrate that also alters the intial THz-wave.}
-  \end{figure}
+\begin{frame}{Thin samples}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/epsilon.pdf}
+      {Real and complex part of the dielectric function of ZnTe.}
+    \end{column} 
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/sigma.pdf}
+      {Real and complex part of the optical conductivity function of ZnTe.}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}
-  For this we have to consider the transmission coeffiecients $t(\omega)$ of both mediums.
-  Aswell as reflections inside the medium.
-  We can write the transmitted THz-wave as
-  \begin{equation}
-    E_\text{t} '(\omega) = \eta t_\text{Probe}(\omega) t_\text{Sub}(\omega)FP(\omega)E_0(\omega)
-  \end{equation}
-  where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
-  The complex transfer function $H_0'$ can then be writen as 
-  \begin{equation}
-    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
-  \end{equation}
-  \textsc{\textcolor{tugreen}{Time-Resolved Terahertz Spectroscopy Studies on 2D Van der Waals Materials} from Peng Han, Adv. Opt. Mater. \textbf{8} (2020).}
+\begin{frame}{Problems and limitations}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      Inherent limitations
+      \begin{itemize}
+        \item dependent on thickness of probe
+        \item dependent on surrounding medium
+        \item References and Probe measurement have to be equal
+      \end{itemize}
+    \end{column} 
+    \begin{column}{0.5\textwidth}
+      Problems
+      \begin{itemize}
+        \item Fabry Perot factor is still an issue
+        \item Program sometimes cant find the minimum
+        \item Break conditions unclear 
+        \item Linear Phase?
+        \item Different frequency ranges give different results -> too dependent on starting parameters 
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \section{conclusion}
 \begin{frame}{Refractive index}
   \begin{center}
   \textcolor{tugreen}{conclusion:}
-  This scheme gives an easy way to determine the refractive index of thick homogenous probes through time resolved THz-Spectroscopy.
-  It can be extended to also take reflections inside the probe into account by using the Fabry-Perot factor in the transmitted wave.
-  However, for most experimental setups this wont be necessary as the post-pulse is sufficiently delayed.\\
+    The programm gives atleast a rough estimate on the refractive index. However, there are some limitations tp its accuracy.\\
+    Its very hard to sufficiently test the scheme as we dont have reliable data.\\
+    Its even harder to test the scheme for thin films or 2D materials.\\
   \textcolor{tugreen}{outlook:}
   Numerical Processes can be used to make the scheme even more accurate and take refelections into account aswell.
 \end{center}
