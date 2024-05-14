@@ -85,7 +85,7 @@ def delta_phi(r, params):
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap(angle_0)[index]  #phase 
-    return np.sum(phase_0 - phase_mes)
+    return (phase_0 - phase_mes)
 
 def delta_rho(r, params):
     n = r[0]
@@ -97,7 +97,7 @@ def delta_rho(r, params):
     Material_parameter = params[4]
     FP = params[5]
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
-    return np.sum([np.log(np.abs(H_0_calc[index])) - np.log(np.abs(H_0_measured))])
+    return (np.log(np.abs(H_0_calc[index])) - np.log(np.abs(H_0_measured)))
    
 def Transfer_function_three_slabs(omega, n_2_real, k_2, Material_parameter, FP):
     n_1 = Material_parameter.n_1 - 1j*Material_parameter.k_1

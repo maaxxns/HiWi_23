@@ -30,7 +30,7 @@ def filter_dataset(data_ref,data_sam, filter=None):
         peak_ref = np.argmax(data_ref[:,1])
         peak_sam = np.argmax(data_sam[:,1])
         t = np.abs(data_ref[10,0] - data_ref[11,0])
-        width_peak = int((4*10**(-12))/t)
+        width_peak = int((4.5*10**(-12))/t)
         cut_ref = peak_ref + width_peak #- len(data_sam)//1 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
         cut_sam = peak_sam + width_peak #- len(data_ref)//1 # we move a bit to the left from the second peak, so that we dont include the peak. In this case we move a tenth of the whole signal length
         data_ref[cut_ref:,1] = np.zeros(len(data_ref[cut_ref:,1])) #truncate the signal according to the second peak in the sample data, which should be the post pulse. And substitute the values with zeros
@@ -71,7 +71,7 @@ def Hessematrix_minizer(r, params=None, h = 10**(-6)):
     # D = d²delta(r_p)/dk² = (delta(n, k + h) - 2*delta(n,k) - delta(n,k - h))/h²
     return np.array([[A,B], [C,D]])
 
-def newton_minimizer(func, r, params, h=10**(-6), gamma = 1): #newton iteration step to find the best value of r=(n_2,k_2)  
+def newton_minimizer(func, r, params, h=10**(-3), gamma = 1): #newton iteration step to find the best value of r=(n_2,k_2)  
     A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p) 
     grad_ = grad_2D(func,r, params, h) # calculate the gradient of delta(r_p)
     r_p_1 = r - gamma * np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
@@ -85,8 +85,9 @@ def gradient_decent(func, r, params, h = 10**-6, gamma = 1):
 
 def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
     boundaries = len(x)//2
-    upper_bound = boundaries + int(boundaries/1.2)
-    lower_bound = boundaries - int(boundaries/1.2)
+    upper_bound = boundaries + int(boundaries/4)
+    #lower_bound = boundaries - int(boundaries/4)
+    lower_bound = 0
     params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
     return params
 

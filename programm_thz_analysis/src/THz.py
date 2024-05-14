@@ -54,23 +54,26 @@ n_slab = 1.00028
 k_slab = 0
 k_air= 0
 
+#n = np.genfromtxt("build/results/LSAT_purged_RT_0.6mm_results.csv", delimiter=", ", comments="#")
+#print(n[:,1])
+
 Material = Material_parameters(d = d, n_1=n_air, k_1=k_air, n_3=n_slab, k_3=k_slab)
 file_name = "data/22_04_24/ZnTe_1mm.txt" # filename of the measured data
 ref_file_name = 'data/22_04_24/ref.txt' # filename of the reference data
 comparison_data_file_name = "data/22_04_24/ZnTe_materialparameters_teramat.txt" # filename of the comaprison data
 
-min_freq = 0*10**12
+min_freq = 0.5*10**12
 max_freq = 3.5*10**12
 
 FP = False # Choose if the FabryPerot factor is included in the Transmission function
             # usually for thin samples its better to divide the measured data by the FarbyPerot factor, so in general I never put FP on True
             # As the FP oscillates heavily depending on the probe thickness and that makes the estimation considerably less stable
-
+testing = True
 plotting = True # just for plots of measured data, the n k, epsilon and sigma plots will always be made
 comparison_parameter = False # if False no comparison data will be red in
 filter_0 = False
 filter_type = "truncate"
-#  HDPE 2070um data/20240409/HDPE_2070um.txt
+# HDPE 2070um data/20240409/HDPE_2070um.txt
 # 20240409/Si_wafer_rough_700um
 # data/22_04_24/ZnTe_1mm.txt
 #data/Ca3Co3O8_purged/A_RT_B_RT_Ca3Co3O8.txt
@@ -192,7 +195,7 @@ For this the idea is:
     4. Do the same process as if the material would be thick and find a n and k
     5. Start the process over until a good value for n and k is found
 """
-if(Material.d >= 10**-3): # If the probe is thick enough (in generall 1mm should be thick enough) we can disregard the FP factor because the time delay between reflections and actual pulse is big enough
+if(Material.d >= 10**-3 or filter_type=="truncate"): # If the probe is thick enough (in generall 1mm should be thick enough) we can disregard the FP factor because the time delay between reflections and actual pulse is big enough
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0] # as we walk though the freq reverse we also have to walk through the other parameters in reverse. So we need to find the corrct index
         params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
@@ -202,7 +205,7 @@ if(Material.d >= 10**-3): # If the probe is thick enough (in generall 1mm should
             print(res.message)
             print("At ", freq/10**12, " THz")
         r_0 = res.x # otherwise we can just save the result in a temp variable for later use
-        if(np.mod(index, 10)==0): # every 100 steps we look at the estimated Transferfunction, this is just for performance analyzation
+        if(np.mod(index, 10)==0 and testing): # every 100 steps we look at the estimated Transferfunction, this is just for performance analyzation
             temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, FP))
             plt.figure()
             plt.plot(freq_ref,temp_T, label="T")
@@ -217,6 +220,13 @@ if(Material.d >= 10**-3): # If the probe is thick enough (in generall 1mm should
 else: # optically thin sample need to be treated differently 
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0]    
+        params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, 1)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
+        if(res.success != True): # if the minimizer cant minize we output an error message
+            print("Warning minimizer couldnt terminate: ")
+            print(res.message)
+            print("At ", freq/10**12, " THz")
+        r_0 = res.x # otherwise we can just save the result in a temp variable for later use
         for i in range(20):
 
             #############################################################################################################################################################
@@ -227,13 +237,13 @@ else: # optically thin sample need to be treated differently
             ########################################################################################################################################################################
             
             params_delta_function = [H_0_value_FP_free[index - 1:index + 1], phase_approx_FP_free[index - 1:index + 1], freq_ref, index, Material, FP]
-            res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((None, None), (None, None)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+            res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (-1, 1)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
             if(res.success != True):
                 print("Warning minimizer couldnt terminate: ")
                 print(res.message)
             # hess=Hessematrix_minizer
             r_0 = res.x
-        if(np.mod(index, 10)==0):
+        if(np.mod(index, 10)==0 and testing):
             temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, FP))
             plt.figure()
             plt.plot(freq_ref,temp_T, label="T")
@@ -281,11 +291,11 @@ print("Done")
 
 print("Plotting...")
 plt.figure()
-#plt.plot(freq_ref[minlimit:maxlimit]/1e12, (flatten(np.array(r_per_freq[minlimit:maxlimit]))[0::2]), label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit]/1e12, (flatten(np.array(r_per_freq[minlimit:maxlimit]))[0::2]), label='n') # we have to flatten the array before it plots 
 plt.plot(freq_ref[minlimit:maxlimit]/1e12, (flatten(r_per_freq[minlimit:maxlimit])[1::2]), label='k')
 if comparison_parameter:
     plt.plot(parameters[:,0], parameters[:,1], label="from tera")
-
+#plt.yscale("log")
 plt.xlabel(r'$\omega / THz$')
 plt.ylabel('value')
 plt.title('parameter: start r ' + str([n_0, k_0]))
