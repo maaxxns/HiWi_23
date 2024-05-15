@@ -7,6 +7,7 @@ from mathTHz import *
 from plot import *
 from tqdm import tqdm
 from scipy.optimize import minimize
+from scipy.signal import savgol_filter
 ###################################################################################################################################
 # Datatypes
 
@@ -48,22 +49,22 @@ class Material_parameters:
 
 # The thickness of the probe
 
-d = 1*10**(-3) # thickness of the probe in SI
+d = 13.5*10**(-9) # thickness of the probe in SI
 n_air = 1.00028
-n_slab = 1.00028
-k_slab = 0
+n_slab = 4.2
+k_slab = 0.03
 k_air= 0
 
 #n = np.genfromtxt("build/results/LSAT_purged_RT_0.6mm_results.csv", delimiter=", ", comments="#")
 #print(n[:,1])
 
 Material = Material_parameters(d = d, n_1=n_air, k_1=k_air, n_3=n_slab, k_3=k_slab)
-file_name = "data/22_04_24/ZnTe_1mm.txt" # filename of the measured data
-ref_file_name = 'data/22_04_24/ref.txt' # filename of the reference data
+file_name = "data/Ca3Co3O8_purged/A_4.5_B_5.7_Ca3Co3O8.txt" # filename of the measured data
+ref_file_name = 'data/Ca3Co3O8_purged/ref_substrate_after.txt' # filename of the reference data
 comparison_data_file_name = "data/22_04_24/ZnTe_materialparameters_teramat.txt" # filename of the comaprison data
 
 min_freq = 0.5*10**12
-max_freq = 3.5*10**12
+max_freq = 3*10**12
 
 FP = False # Choose if the FabryPerot factor is included in the Transmission function
             # usually for thin samples its better to divide the measured data by the FarbyPerot factor, so in general I never put FP on True
@@ -72,6 +73,7 @@ testing = True
 plotting = True # just for plots of measured data, the n k, epsilon and sigma plots will always be made
 comparison_parameter = False # if False no comparison data will be red in
 filter_0 = False
+Ausreisser_raus = True
 filter_type = "truncate"
 # HDPE 2070um data/20240409/HDPE_2070um.txt
 # 20240409/Si_wafer_rough_700um
@@ -136,6 +138,8 @@ if comparison_parameter:
 ###################################################################################################################################
 
 H_0_value = amp_sam/amp_ref # complex transfer function
+H_0_value = lowpass(H_0_value, 0.8)
+#H_0_value = savgol_filter(H_0_value.real, len(H_0_value), len(H_0_value)//4) + 1j*savgol_filter(H_0_value.imag, len(H_0_value), len(H_0_value)//4)
 angle = np.angle(H_0_value) #angle between complex numbers
 phase = (np.unwrap(angle))  #phase  
 
@@ -195,7 +199,7 @@ For this the idea is:
     4. Do the same process as if the material would be thick and find a n and k
     5. Start the process over until a good value for n and k is found
 """
-if(Material.d >= 10**-3 or filter_type=="truncate"): # If the probe is thick enough (in generall 1mm should be thick enough) we can disregard the FP factor because the time delay between reflections and actual pulse is big enough
+if(Material.d >= 10**-3 or (filter_type=="truncate" and filter_0 == True)): # If the probe is thick enough (in generall 1mm should be thick enough) we can disregard the FP factor because the time delay between reflections and actual pulse is big enough
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0] # as we walk though the freq reverse we also have to walk through the other parameters in reverse. So we need to find the corrct index
         params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
@@ -221,7 +225,7 @@ else: # optically thin sample need to be treated differently
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0]    
         params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
-        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, 1)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, 8), (-1, 1)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
         if(res.success != True): # if the minimizer cant minize we output an error message
             print("Warning minimizer couldnt terminate: ")
             print(res.message)
@@ -231,13 +235,22 @@ else: # optically thin sample need to be treated differently
 
             #############################################################################################################################################################
             # Estimation of new H_0 value without the Farby perot value
-            H_0_value_FP_free = H_0_value*inverse_Fabry_Perot(freq_ref, r_0, Material) # we divide the measured data by the Farby perot factor to make free
+            H_0_value_FP_free = H_0_value/Fabry_Perot(freq_ref, r_0, Material) # we divide the measured data by the Farby perot factor to make free
             phase_FP_free = np.unwrap(np.angle(H_0_value_FP_free))
             phase_approx_FP_free  = linear_approx(freq_ref, phase_FP_free)[1] * freq_ref
             ########################################################################################################################################################################
-            
-            params_delta_function = [H_0_value_FP_free[index - 1:index + 1], phase_approx_FP_free[index - 1:index + 1], freq_ref, index, Material, FP]
+            params_delta_function = [H_0_value_FP_free[index], phase_approx_FP_free[index], freq_ref, index, Material, FP]
             res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (-1, 1)), args=params_delta_function) # minimizer needs gradient as a function and hessematrix of the delta function.
+            if(index == 50):
+                plt.figure()
+                plt.plot(freq_ref, np.abs(Fabry_Perot(freq_ref, r_0, Material)), label="FP")
+                plt.plot(freq_ref, np.abs(H_0_value_FP_free), label="FP free H_0")
+                plt.title(str(r_0))
+                plt.xlabel("freq")
+                plt.ylabel("H_0/FP")
+                plt.legend()
+                plt.savefig("build/testing/Transfertest_Thz/FP_freeH_0perstep" + str(freq_ref[index]/10**12)+ str(i) + ".pdf")
+                plt.close()
             if(res.success != True):
                 print("Warning minimizer couldnt terminate: ")
                 print(res.message)
@@ -284,15 +297,27 @@ else: # optically thin sample need to be treated differently
             plt.legend()
             plt.savefig("build/testing/Transfertest_Thz/FPat" + str(freq_ref[index]/10**12) + ".pdf")
             plt.close()
+        #if(r_0[0] > 10):
+        #    r_0[0] = 1
         r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the minimizing method for the frequency freq
 
 alpha = absorption_coef(freq_ref[minlimit:maxlimit], (flatten(r_per_freq[minlimit:maxlimit])[1::2]))
 print("Done")
 
+#############################################################################################################################################################################################
+# I am not quiute sure how I should treat data that is obviously wrong, so one take is to erase those data points and plot just the relasitic data
+#############################################################################################################################################################################################
+n = np.array(flatten(r_per_freq[minlimit:maxlimit])[0::2]) # first flatten the convoluted array than take every second entrance starting with the zeroth as those are n
+k = np.array(flatten(r_per_freq[minlimit:maxlimit])[1::2]) # first flatten the convoluted array than take every second entrance starting with the first as those are k
+
+
+if(Ausreisser_raus):
+    mask3 = n < 10
+
 print("Plotting...")
 plt.figure()
-plt.plot(freq_ref[minlimit:maxlimit]/1e12, (flatten(np.array(r_per_freq[minlimit:maxlimit]))[0::2]), label='n') # we have to flatten the array before it plots 
-plt.plot(freq_ref[minlimit:maxlimit]/1e12, (flatten(r_per_freq[minlimit:maxlimit])[1::2]), label='k')
+plt.plot(freq_ref[minlimit:maxlimit][mask3]/1e12, n[mask3], marker=".",ls="", label='n') # we have to flatten the array before it plots 
+plt.plot(freq_ref[minlimit:maxlimit][mask3]/1e12, k[mask3], label='k')
 if comparison_parameter:
     plt.plot(parameters[:,0], parameters[:,1], label="from tera")
 #plt.yscale("log")
@@ -310,8 +335,6 @@ plot_absorption_coefficient(freq_ref[minlimit:maxlimit], alpha, parameters, Fals
 ###################################################################################################################################
 
 
-n = np.array(flatten(r_per_freq[minlimit:maxlimit])[0::2]) # first flatten the convoluted array than take every second entrance starting with the zeroth as those are n
-k = np.array(flatten(r_per_freq[minlimit:maxlimit])[1::2]) # first flatten the convoluted array than take every second entrance starting with the first as those are k
 
 epsilon_1 = estimater_epsilon_1(n, k)
 epsilon_2 = estimater_epsilon_2(n, k)

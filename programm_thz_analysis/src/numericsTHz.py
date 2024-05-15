@@ -3,6 +3,8 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 from mathTHz import gaussian, Transfer_function_three_slabs
 from mathTHz import delta_of_r_whole_frequency_range
+from scipy.signal import butter,sosfiltfilt
+
 def lin(A, B, x):
     return A*x+B
 
@@ -94,3 +96,8 @@ def linear_approx(x, y): # Fits a linear function into the data set where x is u
 def Transmission_approx(freq, H_0, r):
     params, cov = curve_fit(Transfer_function_three_slabs, freq, H_0, r)
     return params
+
+def lowpass(data: np.ndarray, cutoff: float, poles: int = 5):
+    sos = butter(poles, cutoff, 'lowpass', output='sos')
+    filtered_data = sosfiltfilt(sos, data)
+    return filtered_data
