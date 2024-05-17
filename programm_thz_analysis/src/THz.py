@@ -138,7 +138,7 @@ if comparison_parameter:
 ###################################################################################################################################
 
 H_0_value = amp_sam/amp_ref # complex transfer function
-H_0_value = lowpass(H_0_value, 0.8)
+H_0_value = lowpass(H_0_value, 0.5)
 #H_0_value = savgol_filter(H_0_value.real, len(H_0_value), len(H_0_value)//4) + 1j*savgol_filter(H_0_value.imag, len(H_0_value), len(H_0_value)//4)
 angle = np.angle(H_0_value) #angle between complex numbers
 phase = (np.unwrap(angle))  #phase  
@@ -185,7 +185,15 @@ r_0 = np.array([n_0,k_0]) # r_p[0] = n, r_p[1] = k
 ###################################################################################################################################
 
 r_per_freq = [None]*(len(freq_ref)) # all the n and k per frequency will be written into this array
+plt.figure()
 
+plt.plot(freq_ref, Fabry_Perot(freq_ref, [3, 0.03], Material).real, label="real")
+plt.plot(freq_ref, Fabry_Perot(freq_ref, [3, 0.03], Material).imag, label="imag")
+plt.xlabel("freq")
+plt.ylabel("FP")
+plt.legend()
+plt.savefig("build/testing/Fabryperottests.pdf")
+plt.close()
 
 print("starting values for Newton-Raphson: r_per_step =", r_0)
 print("SNR T: ", signaltonoise(np.abs(H_0_value)), "dB, SNR arg(T): ", signaltonoise(np.abs(phase)), "dB")

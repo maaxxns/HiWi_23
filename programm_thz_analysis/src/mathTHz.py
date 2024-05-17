@@ -114,7 +114,7 @@ def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a give
     n_1 = Material.n_1 - 1j*Material.k_1
     n_2 = r[0] - 1j*r[1] 
     n_3 = Material.n_3 - 1j*Material.k_3
-    return 1/(1 - (n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)*np.exp(-2 * 1j*n_2 * 2*np.pi*freq*Material.d/c)) #*## 
+    return 1/(1 - (n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)*np.exp(-2 * 1j*n_2 * 2*np.pi*freq*(Material.d)/c)) #*## 
 
 def inverse_Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
     n_1 = Material.n_1 - 1j*Material.k_1

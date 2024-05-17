@@ -51,7 +51,7 @@ k_test = np.linspace(0.1,0.3,300)
 
 
 
-T = Transfer_function_three_slabs(freq_ref, 1 , n_test, 1, k_slab, k_test, k_slab, d, True) 
+T = Transfer_function_three_slabs(freq_ref, n_test, k_test, Material, True) 
 
 phase = (np.unwrap(np.angle(T)))
 
@@ -97,7 +97,7 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
     res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0,None)),args=params_delta_function)
     r_0[0] = res.x[0]
     if(np.mod(index, 100) == 0): 
-        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, 1, r_0[0], 1, 1, r_0[1], 1, Material.d, True))
+        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, True) )
         plt.figure()
         plt.plot(freq_ref,temp_T, label="T")
         plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
@@ -214,3 +214,14 @@ plt.ylabel('value')
 plt.legend()
 plt.savefig('build/testing/test_func.pdf')
 """
+
+
+plt.figure()
+
+plt.plot(freq_ref[1:-2], inverse_Fabry_Perot(freq_ref[1:-2], flatten(r_per_freq[1:-2]), Material).real, label="real")
+plt.plot(freq_ref[1:-2], inverse_Fabry_Perot(freq_ref[1:-2], flatten(r_per_freq[1:-2]), Material).imag, label="imag")
+plt.xlabel("freq")
+plt.ylabel("FP")
+plt.legend()
+plt.savefig("build/testing/Fabryperottests.pdf")
+plt.close()
