@@ -52,7 +52,7 @@ def FFT_func(I, t): # FFT, I the Intensity of the signal as array of size X, t t
     timestep = np.abs(t[N//2 + 1]-t[N//2]) # the time between each data point
     FX = (fft(I)[:N//2]) #the fourier transform of the intensity. 
     FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
-    return [FDelay[10:], FX[10:]] # cut of the noise frequency
+    return [FDelay, FX] # cut of the noise frequency
 
 def difference_measured_calc(r, params):
     n = r[0]
@@ -103,7 +103,7 @@ def Transfer_function_three_slabs(omega, n_2_real, k_2, Material_parameter, FP):
     n_1 = Material_parameter.n_1 - 1j*Material_parameter.k_1
     n_2 = n_2_real - 1j*k_2
     n_3 = Material_parameter.n_3 - 1j*Material_parameter.k_3
-    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp((-1j*n_2 + n_1*1j) * 2*np.pi*omega*Material_parameter.d/c)
+    T = (2*n_2*(n_1 + n_3)/((n_2 + n_1) * (n_2 + n_3))) * np.exp((-1j*n_2 + n_3*1j) * 2*np.pi*omega*Material_parameter.d/c)
     if(FP):
         FP = 1/(1 - (((n_2 - n_1)/(n_2 + n_1) * (n_2 - n_3)/(n_2 + n_3)) * np.exp(-2 * 1j*n_2 * 2*np.pi* omega*Material_parameter.d/c)))
         return T*FP
