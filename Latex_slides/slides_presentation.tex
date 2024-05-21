@@ -191,7 +191,7 @@ alternatively Numerical approximations can be used.\\
     \Delta(H(\omega)) \overset{!}{=} 0 = H_0(n, \kappa, \omega) - H_\text{meas}(\omega)
   \end{equation}
   However, this root finding problem isn't smooth nor monotonous.
-  To overcome this problem we define a error function 
+  To overcome this problem we define an error function 
   \begin{equation}
     \delta(n, \kappa) = \delta \phi^2 + \delta \rho^2
   \end{equation}
@@ -211,6 +211,7 @@ alternatively Numerical approximations can be used.\\
       The phase $\Phi(H_0(\omega, n, \kappa))$ of the Transferfunction has to be extracted.
       Should be linear and homogenous.
       But it varies between $-\pi$ and $\pi$. And noise makes it sometimes hard to unwrap.\\
+      \vspace*{0.5cm}
       To make it continous, the values need to be $2\pi$ shifted every time a phase jump would occure.
       So we approximation the phase by a linear function and shifted to cross zero as $\omega=0$.\\
       We are left with a linear phase $\Phi_\text{lin}(T_\text{meas}(\omega, n, \kappa))$.
@@ -286,9 +287,17 @@ alternatively Numerical approximations can be used.\\
 
 \section{Thin samples}
 \begin{frame}{Thin sample solution}
-As optically thin samples reflect the THz-wave and transmitt it after a whole pass they need to be treated different.\\
-To take these reflections into account we have to cosider some additional effects.\\
-These effects are caused by the Farby-Perot factor.
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      As optically thin samples reflect the THz-wave and transmitt it after a whole pass they need to be treated different.\\
+      To take these reflections into account we have to cosider some additional effects.\\
+      These effects are caused by the Farby-Perot factor.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \includegraphics*[0.9\texwidth]{images/THz_timedomain_thinsample.pdf}
+      {Time domain data of a 2d material on top of a substrate. A post pulse is clearly visible.}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 %\begin{frame}{Determining the refractive index}
@@ -441,7 +450,7 @@ These effects are caused by the Farby-Perot factor.
 
 \begin{frame}{Break condition}
   The question is now when one should stop.
-  For I use 
+  For now I use 
   \begin{equation}
     p_\text{max} = 20
   \end{equation}
@@ -477,7 +486,7 @@ These effects are caused by the Farby-Perot factor.
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{figure}
-        \includegraphics[width=0.5\textwidth]{images/procedure_fp.jpg}
+        \includegraphics[width=0.8\textwidth]{images/procedure_fp.jpg}
         \caption{The schematic procedure of extracting the refractive index from thin samples. Note that $n_2, \kappa_2$ are the refractive indices.}
       \end{figure}
       \textcolor{tugreen}{A Reliable Method for Extraction of Material Parameters in Terahertz Time-Domain Spectroscopy} from Lionel Duvillaret, Frédéric Garet, and Jean-Louis Coutaz,IEEE \textbf{2} (1996).
@@ -505,14 +514,14 @@ These effects are caused by the Farby-Perot factor.
   where $t_\text{Probe}(\omega)$ and $t_\text{Sub}(\omega)$ denote the transmission coeffiecients of the probe and substrate respectively.
   The complex transfer function $H_0'$ can then be writen as 
   \begin{equation}
-    H_0(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]
+    H_0'(\omega) = \frac{2 n_s(n_\text{sub} + 1)}{(n_\text{s} + n_\text{sub})(n_s + 1)} \symup{exp}\left[ - i (n_s - 1) \frac{\omega l }{c}\right]\cdot FP(\omega)
   \end{equation}
   \textsc{\textcolor{tugreen}{Time-Resolved Terahertz Spectroscopy Studies on 2D Van der Waals Materials} from Peng Han, Adv. Opt. Mater. \textbf{8} (2020).}
 \end{frame}
 
 \section{Results}
 \begin{frame}{Thick samples}
-  ZnTe unpurged
+  ZnTe purged
   \begin{columns}
     \begin{column}{0.5\textwidth}
       \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/THz_timedomain.pdf}
@@ -526,7 +535,7 @@ These effects are caused by the Farby-Perot factor.
 \end{frame}
 
 \begin{frame}{}
-  ZnTe unpurged
+  ZnTe purged
   \begin{columns}
     \begin{column}{0.5\textwidth}
       \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/frequncy_against_n_k.pdf}
