@@ -208,7 +208,7 @@ alternatively Numerical approximations can be used.\\
   % for now its just so that I dont forget what I want to say at this slide.
   \begin{columns}
     \begin{column}{0.4\textwidth}
-      The phase $\Phi(H_0(\omega, n, \kappa))$ of the Transferfunction has to be extracted.
+      The phase $\Phi(H_\text{meas}(\omega, n, \kappa))$ of the Transferfunction has to be extracted.
       Should be linear and homogenous.
       But it varies between $-\pi$ and $\pi$. And noise makes it sometimes hard to unwrap.\\
       \vspace*{0.5cm}
@@ -277,7 +277,7 @@ alternatively Numerical approximations can be used.\\
   To summarize the steps we already took:
   \begin{itemize}
     \item[1.] Measure probe and reference data 
-    \item[2.] Calculate Transferfunction $H_0(\omega)$
+    \item[2.] Calculate Transferfunction $H_\text{meas}(\omega)$
     \item[3.] Determine the phase $\Phi(H_\text{meas}(\omega, n, \kappa))$
     \item[4.] Linearise phase
     \item[5.] Minimize $\delta(\omega, n, \kappa)$ starting from high frequencies
@@ -294,7 +294,7 @@ alternatively Numerical approximations can be used.\\
       These effects are caused by the Farby-Perot factor.
     \end{column}
     \begin{column}{0.5\textwidth}
-      \includegraphics*[0.9\texwidth]{images/THz_timedomain_thinsample.pdf}
+      \includegraphics[width=0.9\textwidth]{images/THz_timedomain_thinsample.pdf}
       {Time domain data of a 2d material on top of a substrate. A post pulse is clearly visible.}
     \end{column}
   \end{columns}
@@ -402,7 +402,7 @@ alternatively Numerical approximations can be used.\\
   If we consider all the reflections inside the probe the transmitted wave will look like
   \begin{align*}
     E_\text{t}(\omega) \,=\,& \tau \tau' \symup{exp} \left[-i n_s(\omega) \frac{\omega l }{c}\right] \\
-                        & \cdot \left( 1 + \rho'^2 \cdot \symup(exp)\left[ -3 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup(exp) \left[ -5 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
+                        & \cdot \left( 1 + \rho'^2 \cdot \symup{exp}\left[ -3 i n_s(\omega) \frac{\omega l }{c}\right] + \rho'^4 \symup{exp} \left[ -5 i n_s(\omega) \frac{\omega l }{c}\right] + ...\right) \cdot E_0 (\omega) \\
                         \,=\,& \tau \tau' \symup{exp}\left[ -2 i n_s(\omega) \frac{\omega l }{c}\right] \cdot FP(\omega) E_0(\omega)
   \end{align*}
   where $\rho'$ is the complex reflection coeffiecient of the probe
@@ -472,7 +472,7 @@ alternatively Numerical approximations can be used.\\
       Lets summarize the steps
       \begin{itemize}
         \item[1.] Measure probe and reference data 
-        \item[2.] Calculate Transferfunction $H_0(\omega)$
+        \item[2.] Calculate Transferfunction $H_\text{meas}(\omega)$
         \item[3.] Determine the phase $\Phi(H_\text{meas}(\omega, n, \kappa))$
         \item[4.] Linearise phase
         \item[5.] Minimize $\delta(\omega, n, \kappa)$ to get solution $\vec{r}_p$
@@ -521,7 +521,7 @@ alternatively Numerical approximations can be used.\\
 
 \section{Results}
 \begin{frame}{Thick samples}
-  ZnTe purged
+  ZnTe unpurged
   \begin{columns}
     \begin{column}{0.5\textwidth}
       \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/THz_timedomain.pdf}
@@ -569,14 +569,44 @@ alternatively Numerical approximations can be used.\\
 \begin{frame}{Thin samples}
   \begin{columns}
     \begin{column}{0.5\textwidth}
-      \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/epsilon.pdf}
-      {Real and complex part of the dielectric function of ZnTe.}
+      \includegraphics[width=\textwidth]{images/2donSub/THz_timedomain.pdf}
+      {THz timedomain data of Ca3Co3O8 on LSAT substrat.}
     \end{column} 
     \begin{column}{0.5\textwidth}
-      \includegraphics[width=\textwidth]{images/ZnTe1mm_purged_nofilter/sigma.pdf}
+      \includegraphics[width=\textwidth]{images/2donSub/THz_FFT.pdf}
       {Real and complex part of the optical conductivity function of ZnTe.}
     \end{column}
   \end{columns}
+\end{frame}
+
+\begin{frame}{Thin samples}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{images/2donSub/Transmissionfunction.pdf}
+      {complex Transferfunction of Ca3Co3O8 on LSAT substrate.}
+    \end{column} 
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{images/2donSub/THzPhase_approximation.pdf}
+      {The Phase of Ca3Co3O8 on LSAT substrate.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Thin samples}
+  \begin{columns}
+    \begin{column}{0.33\textwidth}
+      \includegraphics[width=\textwidth]{images/2donSub/frequncy_against_n_k_0.45mm.pdf}
+      {refractive index of Ca3Co3O8 on LSAT substrate for an estimated thickness of $0.45\si{\milli\meter}$.}
+    \end{column} 
+    \begin{column}{0.33\textwidth}
+      \includegraphics[width=\textwidth]{images/2donSub/frequncy_against_n_k0.02mm.pdf}
+      {The Phase of Ca3Co3O8 on LSAT substrate for an estimated thickness of $0.02\si{\milli\meter}$.}
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \includegraphics[width=\textwidth]{images/2donSub/frequncy_against_n_k.pdf}
+      {The Phase of Ca3Co3O8 on LSAT substrate for the "actual" thickness of $13.5\si{\nano\meter}$.}      
+    \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Problems and limitations}
@@ -604,14 +634,10 @@ alternatively Numerical approximations can be used.\\
 
 \section{conclusion}
 \begin{frame}{Refractive index}
-  \begin{center}
   \textcolor{tugreen}{conclusion:}
     The programm gives atleast a rough estimate on the refractive index. However, there are some limitations tp its accuracy.\\
     Its very hard to sufficiently test the scheme as we dont have reliable data.\\
     Its even harder to test the scheme for thin films or 2D materials.\\
-  \textcolor{tugreen}{outlook:}
-  Numerical Processes can be used to make the scheme even more accurate and take refelections into account aswell.
-\end{center}
 \end{frame}
 
 \begin{frame}
