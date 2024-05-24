@@ -87,7 +87,7 @@ def gradient_decent(func, r, params, h = 10**-6, gamma = 1):
 
 def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
     boundaries = len(x)//2
-    upper_bound = boundaries + int(boundaries/4)
+    upper_bound = boundaries + int(boundaries/3)
     #lower_bound = boundaries - int(boundaries/4)
     lower_bound = 0
     params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
