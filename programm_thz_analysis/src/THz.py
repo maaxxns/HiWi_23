@@ -50,8 +50,8 @@ class Material_parameters:
 # The thickness of the probe
 
 d = 1*10**(-3) # thickness of the probe in SI d = 13.5*10**(-6)
-n_air = 1.18
-n_slab = 1.18
+n_air = 1.00028
+n_slab = 1.00028
 k_slab = 0
 k_air= 0.000
 
@@ -257,20 +257,50 @@ if(Material.d >= 10**-3 or (filter_type=="truncate" and filter_0 == True)): # If
         if(np.mod(index, 10)==0 and testing): # every 100 steps we look at the estimated Transferfunction, this is just for performance analyzation
             temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, FP))
             plt.figure()
-            plt.plot(freq_ref,temp_T, label="T")
-            plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
+            plt.plot(freq_ref, temp_T, label="T")
+            plt.plot(freq_ref, (np.abs(H_0_value)), label="actual H_0")
             plt.title(str(r_0))
             plt.xlabel("freq")
             plt.ylabel("T")
             plt.legend()
             plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(freq_ref[index]/10**12) + ".pdf")
             plt.close()
+            ns = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
+            ks = np.linspace(r_0[1], r_0[1], 1000)
+            delta = [None]*len(ns)
+            i = 0
+            for n in ns:
+                delta[i] = delta_rho([n, ks[i]], params_delta_function)
+                i = i + 1
+            plt.figure()
+            plt.plot(ns, delta, label="delta rho")
+            plt.title(str(r_0[0]))
+            plt.xlabel("k")
+            plt.ylabel("delta rho")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/delta/deltarho_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+            ns = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
+            ks = np.linspace(r_0[1], r_0[1], 1000)
+            delta = [None]*len(ns)
+            i = 0
+            for n in ns:
+                delta[i] = delta_phi([n, ks[i]], params_delta_function)
+                i = i + 1
+            plt.figure()
+            plt.plot(ns, delta, label="delta phi")
+            plt.title(str(r_0[0]))
+            plt.xlabel("k")
+            plt.ylabel("delta phi")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/delta/deltaphi_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
         r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
 else: # optically thin sample need to be treated differently 
     for freq in tqdm((reverse_array(freq_ref[minlimit:maxlimit]))): #walk through frequency range from upper to lower limit
         index = np.argwhere(freq_ref==freq)[0][0]    
         params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index, Material, FP] # we save all the parameters that the error function needs in a big list
-        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0, None)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
+        res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (None, None)), args=params_delta_function) # minimizer for the errorfunction. depeding on the method choosen this needs a hess and jac aswell but the basic one is fine without
         if(res.success != True): # if the minimizer cant minize we output an error message
             print("Warning minimizer couldnt terminate: ")
             print(res.message)
@@ -300,15 +330,20 @@ else: # optically thin sample need to be treated differently
             if(res.success != True):
                 print("Warning minimizer couldnt terminate: ")
                 print(res.message)
+                ns = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
+                ks = np.linspace(r_0[1], r_0[1], 1000)
+                delta = [None]*len(ns)
+                i = 0
+                for n in ns:
+                    delta[i] = delta_of_r_whole_frequency_range([n, ks[i]], params_delta_function)
+                    i = i + 1
                 plt.figure()
-                n = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
-                k = np.linspace(r_0[1], r_0[1], 1000)
-                plt.plot(n,delta_of_r_whole_frequency_range([n, k], params_delta_function), label="delta")
+                plt.plot(ns, delta, label="delta")
                 plt.title(str(r_0[0]))
                 plt.xlabel("n")
                 plt.ylabel("delta")
                 plt.legend()
-                plt.savefig("build/testing/Transfertest_Thz/deltafunction_at" + str(freq_ref[index]/10**12) + ".pdf")
+                plt.savefig("build/testing/Transfertest_Thz/delta/deltafunction_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
                 plt.close()
             # hess=Hessematrix_minizer
             r_0 = np.abs(res.x)
@@ -352,6 +387,49 @@ else: # optically thin sample need to be treated differently
             plt.ylabel("FP")
             plt.legend()
             plt.savefig("build/testing/Transfertest_Thz/FPat" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, FP))
+            plt.figure()
+            plt.plot(freq_ref, temp_T, label="T")
+            plt.plot(freq_ref, (np.abs(H_0_value)), label="actual H_0")
+            plt.title(str(r_0))
+            plt.xlabel("freq")
+            plt.ylabel("T")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/Transferfunction_iteration_" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            ns = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
+            ks = np.linspace(r_0[1], r_0[1], 1000)
+            delta = [None]*len(ns)
+            i = 0
+            for n in ns:
+                delta[i] = delta_rho([n, ks[i]], params_delta_function)
+                i = i + 1
+            plt.figure()
+            plt.plot(ns, delta, label="delta rho")
+            plt.title(str(r_0[0]))
+            plt.xlabel("k")
+            plt.ylabel("delta rho")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/delta/deltarho_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
+            plt.close()
+
+            ns = np.linspace(r_0[0]-2, r_0[0]+2, 1000)
+            ks = np.linspace(r_0[1], r_0[1], 1000)
+            delta = [None]*len(ns)
+            i = 0
+            for n in ns:
+                delta[i] = delta_phi([n, ks[i]], params_delta_function)
+                i = i + 1
+            plt.figure()
+            plt.plot(ns, delta, label="delta phi")
+            plt.title(str(r_0[0]))
+            plt.xlabel("k")
+            plt.ylabel("delta phi")
+            plt.legend()
+            plt.savefig("build/testing/Transfertest_Thz/delta/deltaphi_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
             plt.close()
         #if(r_0[0] > 10):
         #    r_0[0] = 1

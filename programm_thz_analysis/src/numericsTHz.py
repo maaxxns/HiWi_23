@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
-from mathTHz import gaussian, Transfer_function_three_slabs
+from mathTHz import gaussian, Transfer_function_three_slabs, grad_T
 from mathTHz import delta_of_r_whole_frequency_range
 from scipy.signal import butter,sosfiltfilt
-
+from scipy.constants import c
 def lin(A, B, x):
     return A*x+B
 
@@ -44,6 +44,20 @@ def grad_2D(func, r, params=None, h = 10**(-6)):
     grad_0_x = (func([r[0] + h, r[1]], params) - func([r[0] - h, r[1]], params))/2*h
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
     return np.array([grad_0_x, grad_0_y])
+
+def grad_of_delta(r, params):
+    H_0_measured = params[0]
+    phase_mes = params[1]
+    freq = params[2]
+    index = params[3]
+    Material_parameter = params[4]
+    FP = params[5]
+    A = np.array([(2*(r[0] - Material_parameter.n_1)*(freq*Material_parameter.d/c)**2)[index], 0])
+    T_0 = Transfer_function_three_slabs(freq, r[0], r[1], Material_parameter, FP)[index]
+    gr = grad_T(freq[index], r[0], r[1], Material_parameter, FP)
+    B = (2*((np.log(np.abs(T_0))) - np.log(np.abs(H_0_measured))))* grad_T(freq[index], r[0], r[1], Material_parameter, FP)/T_0
+    grad = A + B
+    return np.array(A + B)
 
 def grad_2D_minizer(r, params=None, h =0.0065): 
     func = delta_of_r_whole_frequency_range

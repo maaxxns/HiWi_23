@@ -4,6 +4,17 @@ from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
 
+def lin(A, B, x):
+    return A*x+B
+
+def linear_approx(x, y): # Fits a linear function into the data set where x is usually the frequency and y is the phase. But could also be used for any x=arraylike y=arraylike
+    boundaries = len(x)//2
+    upper_bound = boundaries + int(boundaries/3)
+    #lower_bound = boundaries - int(boundaries/4)
+    lower_bound = 0
+    params, cov = curve_fit(lin, x[lower_bound:upper_bound], y[lower_bound:upper_bound])
+    return params
+
 def flatten(xss): # doesnt work for None type values
     return [x for xs in xss for x in xs]
 
@@ -84,8 +95,9 @@ def delta_phi(r, params):
     FP = params[5]
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
-    phase_0 = np.unwrap(angle_0)[index]  #phase 
-    return (phase_0 - phase_mes)
+    phase_0 = np.unwrap(angle_0) #phase
+    phase_approx  = (linear_approx(freq, phase_0)[1] * freq)[index]
+    return (phase_0[index] - phase_mes)
 
 def delta_rho(r, params):
     n = r[0]
@@ -109,7 +121,21 @@ def Transfer_function_three_slabs(omega, n_2_real, k_2, Material_parameter, FP):
         return T*FP
     else:
         return T
-    
+
+def grad_T(omega, n_2_real, k_2, Material_parameter, FP):
+    n_1 = Material_parameter.n_1 - 1j*Material_parameter.k_1
+    n_2 = n_2_real - 1j*k_2
+    n_3 = Material_parameter.n_3 - 1j*Material_parameter.k_3
+    exp = np.exp(-1j*(n_2 - n_1)*omega * Material_parameter.d/c)
+    A_1 = (n_1 + n_3)/(n_2**2 + n_1*n_3 + n_2*(n_1 + n_3))*exp
+    A_2 = -2j * A_1
+    B_1 = (2*(n_2*(n_1 + n_3))/(n_2**2 + n_1*n_3 + n_2*(n_2+n_3))**2)*(2*n_2 + n_1 + n_3)*exp
+    B_2 = (2*(n_2*(n_1 + n_3))/(n_2**2 + n_1*n_3 + n_2*(n_2+n_3))**2)*(-2j*n_2 - 1j*( n_1 + n_3))*exp
+    C_1 = 2*n_2*(n_1 + n_3)/(n_2 + n_3)*(n_2 + n_1)*(-1j*omega*Material_parameter.d/c)*exp
+    C_2 = 2*n_2*(n_1 + n_3)/(n_2 + n_3)*(n_2 + n_1)*(-omega*Material_parameter.d/c)*exp
+    return np.array([A_1 - B_1 - C_1, A_2 - B_2 - C_2])
+
+
 def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
     n_1 = Material.n_1 - 1j*Material.k_1
     n_2 = r[0] - 1j*r[1] 
