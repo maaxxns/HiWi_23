@@ -3,7 +3,7 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
-
+from plot import plot_phase_against_freq_debug
 def lin(A, B, x):
     return A*x+B
 
@@ -65,7 +65,7 @@ def FFT_func(I, t): # FFT, I the Intensity of the signal as array of size X, t t
     FDelay = fftfreq(N, d=timestep)[:N//2] #FFT of the time to frequencies. 
     return [FDelay, FX] # cut of the noise frequency
 
-def difference_measured_calc(r, params):
+def difference_measured_calc(r, params): #shouldnt be used as this function is not smooth
     n = r[0]
     k = r[1]
     H_0_measured = params[0]
@@ -74,9 +74,6 @@ def difference_measured_calc(r, params):
     index = params[3]
     Material_parameter = params[4]
     FP = params[5]
-    """ delta is the error between the estimated Transferfunction 
-    and the measured transferfunction, so a delta of zero would mean we found the correct estimation 
-    """ #if needed n_1, n_3 and k_1, k_3 can also be added 
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
     phase_calc = (np.unwrap(np.angle(H_0_calc)))
     return np.abs(H_0_calc[index]-H_0_measured) + np.abs(phase_calc[index] - phase_mes)
@@ -96,6 +93,8 @@ def delta_phi(r, params):
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap(angle_0) #phase
+    if(index < 50):
+        plot_phase_against_freq_debug(freq, (phase_0 - phase_mes), angle_0, index, n)
     phase_approx  = (linear_approx(freq, phase_0)[1] * freq)[index]
     return (phase_0[index] - phase_mes)
 
@@ -134,7 +133,6 @@ def grad_T(omega, n_2_real, k_2, Material_parameter, FP):
     C_1 = 2*n_2*(n_1 + n_3)/(n_2 + n_3)*(n_2 + n_1)*(-1j*omega*Material_parameter.d/c)*exp
     C_2 = 2*n_2*(n_1 + n_3)/(n_2 + n_3)*(n_2 + n_1)*(-omega*Material_parameter.d/c)*exp
     return np.array([A_1 - B_1 - C_1, A_2 - B_2 - C_2])
-
 
 def Fabry_Perot(freq, r, Material): #calculates the FarbyPerot Factor for a given frequency
     n_1 = Material.n_1 - 1j*Material.k_1

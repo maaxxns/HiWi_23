@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mathTHz import Transfer_function_three_slabs
+
 def plot_Intensity_against_time(data_ref, data_sam): #data_ref is refernece data, data_sam is sample data
     # The function plots the Intensity of the sample and reference in time
 
@@ -218,31 +218,6 @@ def plot_FabryPerot(freq, fabry):
     plt.savefig('build/FabryPerot.pdf')
     plt.close()
 
-def plot_Transferfunction_with_specific_n_k(freq_ref, Material):
-    plt.figure()
-    plt.plot(freq_ref/10**12, Transfer_function_three_slabs(freq_ref,2,2, Material, True).real, label='Transferfunction real part')
-    plt.plot(freq_ref/10**12, Transfer_function_three_slabs(freq_ref,2,2,Material, True).imag, label='Transferfunction imag part')
-    plt.plot(freq_ref/10**12, np.abs(Transfer_function_three_slabs(freq_ref,2,2, Material, True)), label='Transferfunction absolut')
-    plt.legend()
-    plt.savefig('build/testing/Transferfunction_n_2_k_2.pdf')
-    plt.close()
-
-    test_n = np.linspace(0,10, 1000)
-    test_k = np.linspace(0,10, 1000)
-
-    test_freq_index = 20
-
-    plt.figure()
-    plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], test_n, 2,Material, True).real, label='Transferfunction n real part')
-    plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], test_n, 2,Material, True).imag, label='Transferfunction n complex part')
-    plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1, test_k, Material, True).real, label='Transferfunction k real part')
-    plt.plot(test_n, Transfer_function_three_slabs(freq_ref[test_freq_index], 1, test_k, Material, True).imag, label='Transferfunction k complex part')
-
-    plt.legend()
-    plt.title("Transferfunction at set frequency but different n and k")
-    plt.savefig('build/testing/Transferfunction_n_k.pdf')
-    plt.close()
-
 def plot_epsilon(freq, epsilon_1, epsilon_2):
         plt.figure()
         plt.plot(freq/10**12, epsilon_1, label=r'$real\, part\, \epsilon$')
@@ -279,3 +254,30 @@ def plot_ref_sam_phase(freq_ref, amp_ref, amp_sam):
     plt.ylabel(r"$Phase/rad$")
     plt.savefig("build/ref_sam_phase.pdf")
     plt.close()
+
+def plot_phase_against_freq_debug(freq_ref, phase, angle, index, i):
+    #plots phase and angle of a complex function against time. The phase should be te unwrapped angle value.
+    plt.figure()
+    #plt.plot(freq_ref_zero*10**(-12),angle_zero, label='angle')
+    plt.plot(freq_ref*10**(-12),angle, label='angle directly from H_0')
+    plt.plot(freq_ref*10**(-12),phase, label='phase directly from H_0')
+    #plt.plot(data_ref[:,0], filter_ref)
+    plt.xlabel(r'$ \omega/THz $')
+    plt.ylabel(r'$\Phi/rad$')
+    plt.legend()
+    plt.grid()
+    plt.title('The phase unwarpped of the zero padded data')
+    plt.savefig('build/testing/Transfertest_Thz/Phase/THzPhase' + str(index) +','+ str(i) +'.pdf')
+    plt.close()
+
+def plot_Transferfunction(n, T):
+    plt.figure()
+    plt.plot(n, T.real, label=r'$real\, part\, T$')
+    plt.plot(n, T.imag, label=r'$complex\, part\, T$')
+    plt.xlabel(r'$ \omega/THz $')
+    plt.ylabel(r'$T$')
+    plt.legend()
+    plt.grid()
+    plt.title('T against n')
+    plt.savefig('build/Transferfunctionagainstn.pdf')
+    plt.close() 

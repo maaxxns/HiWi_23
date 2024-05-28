@@ -65,7 +65,6 @@ def grad_2D_minizer(r, params=None, h =0.0065):
     grad_0_y = (func([r[0],r[1] + h], params) - func([r[0], r[1] - h], params))/2*h 
     return np.array([grad_0_x, grad_0_y])
 
-
 def Hessematrix(func, r, params=None, h = 10**(-6)):  
     A = (func([r[0] + h, r[1]], params) - 2*func([r[0], r[1]], params) + func([r[0] - h, r[1]], params))/h**2
     B = (func([r[0] + h/2, r[1] + h/2], params) - func([r[0] + h/2, r[1] - h/2], params) - func([r[0] - h/2, r[1] + h/2], params) + func([r[0] - h/2, r[1] - h/2], params))/h**2

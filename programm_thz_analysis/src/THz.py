@@ -171,6 +171,7 @@ if(plotting):
     plot_realpart_refractive_index(freq_ref, estimater_n(phase, freq_ref, Material))
     plot_complex_refrective_index(freq_ref, estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material), Material))
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
+    plot_Transferfunction(estimater_n(phase, freq_ref, Material), Transfer_function_three_slabs(freq_ref[100], estimater_n(phase, freq_ref, Material), 0.001, Material, FP=False))
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
 ###################################################################################################################################
