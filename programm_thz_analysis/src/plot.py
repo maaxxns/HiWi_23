@@ -243,7 +243,6 @@ def plot_sigma(freq, sigma1, sigma2):
     plt.savefig('build/sigma.pdf')
     plt.close() 
 
-
 def plot_ref_sam_phase(freq_ref, amp_ref, amp_sam):
     plt.figure()
     plt.plot(freq_ref/10**12, np.unwrap(np.angle(amp_ref)), label="phase of reference")
@@ -279,5 +278,5 @@ def plot_Transferfunction(n, T):
     plt.legend()
     plt.grid()
     plt.title('T against n')
-    plt.savefig('build/Transferfunctionagainstn.pdf')
+    plt.savefig('build/Transferfunctionagainstnm.pdf')
     plt.close() 

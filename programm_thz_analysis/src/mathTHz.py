@@ -93,9 +93,9 @@ def delta_phi(r, params):
     H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
     angle_0 = np.angle(H_0_calc) #angle between complex numbers
     phase_0 = np.unwrap(angle_0) #phase
-    if(index < 50):
-        plot_phase_against_freq_debug(freq, (phase_0 - phase_mes), angle_0, index, n)
-    phase_approx  = (linear_approx(freq, phase_0)[1] * freq)[index]
+    #if(index < 50):
+    #    plot_phase_against_freq_debug(freq, angle_0, phase_0, index, n)
+    #phase_approx  = (linear_approx(freq, phase_0)[1] * freq)[index]
     return (phase_0[index] - phase_mes)
 
 def delta_rho(r, params):

@@ -112,7 +112,7 @@ data_sam[:,0] = data_sam[:,0] + np.abs(np.min(data_sam[:,0]))
 if(filter_0):
     x = np.linspace(0,len(data_sam[:,0]),len(data_sam[:,0]))
     plot_gaussian(data_sam[:,0], gaussian(x, find_peaks(data_sam[:,1], prominence=1)[0][0]), data_sam)
-    data_ref, data_sam = filter_dataset(data_ref, data_sam, filter=filter_type)
+    data_ref, data_sam = filter_dataset(data_ref, data_sam, filter=filter_type) #applies filter that was choosen above
 else:
     print("No preprocessing filter")
 
@@ -172,6 +172,7 @@ if(plotting):
     plot_complex_refrective_index(freq_ref, estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material), Material))
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
     plot_Transferfunction(estimater_n(phase, freq_ref, Material), Transfer_function_three_slabs(freq_ref[100], estimater_n(phase, freq_ref, Material), 0.001, Material, FP=False))
+
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
 ###################################################################################################################################

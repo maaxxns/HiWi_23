@@ -12,7 +12,7 @@ def filter_dataset(data_ref,data_sam, filter=None):
     """
         takes the signal data and applies filters based on which filter is given.
         returns the filtered datasets.
-        possible filters are gaussian and truncating
+        possible filters are gaussian("gaussian") and truncating("truncate")
     """
     # Some test with filters for the dataset
     if(filter == "gaussian"): #puts a gaussian function ontop of the signal peak
@@ -87,10 +87,12 @@ def Hessematrix_minizer(r, params=None, h = 10**(-6)):
     return np.array([[A,B], [C,D]])
 
 def newton_minimizer(func, r, params, h=10**(-3), gamma = 1): #newton iteration step to find the best value of r=(n_2,k_2)  
-    A = Hessematrix(func, r, params, h) # Calculate the hessian matrix of delta(r_p) 
-    grad_ = grad_2D(func,r, params, h) # calculate the gradient of delta(r_p)
-    r_p_1 = r - gamma * np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
-    # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
+    r_p_1 = r
+    for i in range(100):   
+        A = Hessematrix(func, r_p_1, params, h) # Calculate the hessian matrix of delta(r_p) 
+        grad_ = grad_2D(func,r_p_1, params, h) # calculate the gradient of delta(r_p)
+        r_p_1 = r_p_1 - gamma * np.linalg.inv(A).dot(grad_) #why is r_p going in negativ direction when both the hesse and the gradient are negativ, should the r_p move in positiv direction than?
+        # r_p+1 = r_p - A⁽⁻¹⁾*grad(delta(r_p))
     return r_p_1 # returns new values for [n_2,k_2] that minimize the error according to newton iteration step 
 
 def gradient_decent(func, r, params, h = 10**-6, gamma = 1):

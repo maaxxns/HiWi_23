@@ -39,15 +39,15 @@ d = 1*10**-3 # thickness of the probe in SI
 n_air = 1
 n_slab = 1
 k_slab = 0
-
+len_1 = 300
 Material = Material_parameters(d = d, n_1=n_air, k_1=k_slab, n_3=n_slab, k_3=k_slab)
 
-freq_ref = np.linspace(5*10**11, 3*10**12, 300) #test freq from 500 Ghz to 3 THz
+freq_ref = np.linspace(5*10**11, 3*10**12, len_1) #test freq from 500 Ghz to 3 THz
 noise = np.random.normal(0,0.001,len(freq_ref)) + 1j*np.random.normal(0,0.001,len(freq_ref))
 
 
-n_test = np.linspace(1,1.5,300) + 3.1
-k_test = np.linspace(0.1,0.3,300) 
+n_test = np.linspace(1,3.2,len_1) + 2
+k_test = np.linspace(0.1,0.9,len_1) 
 
 
 
@@ -87,17 +87,28 @@ plt.ylabel('phase')
 plt.savefig('build/testing/phase.pdf')
 plt.close()
 
+
+plt.figure()
+plt.plot(k_test, np.unwrap(np.angle(Transfer_function_three_slabs(freq_ref[10], n_test[10], k_test, Material, True) )), label='phase unwrapped')
+#plt.plot(freq_ref, np.angle(T), label='wrapped')
+#plt.plot(freq_ref, phase_approx, label="approximation")
+plt.legend()
+plt.xlabel("k")
+plt.ylabel('phase')
+plt.savefig('build/testing/phase_n.pdf')
+plt.close()
+
 r_0 = r_p
 kicker_n, kicker_k = 0.5, 0.5
 FP = False
-plotting=True
+plotting = True
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
     params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index,  Material, FP]
-    res = minimize(delta_of_r_whole_frequency_range, r_0, bounds=((1, None), (0,None)),args=params_delta_function)
-    r_0[0] = res.x[0]
+    res = minimize(delta_of_r_whole_frequency_range, r_0, args=params_delta_function, bounds=((1,None),(0, None)))
+    r_0 = res.x
     if(np.mod(index, 100) == 0): 
-        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, True) )
+        temp_T = np.abs(Transfer_function_three_slabs(freq_ref, r_0[0], r_0[1], Material, False) )
         plt.figure()
         plt.plot(freq_ref,temp_T, label="T")
         plt.plot(freq_ref, np.abs(H_0_value), label="actual H_0")
@@ -106,7 +117,26 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
         plt.legend()
         plt.savefig("build/testing/transferfunction_test/Transferfunction_iteration_" + str(index) + ".pdf")
         plt.close()
+        ns = np.linspace(r_0[0]-2, r_0[0]+2, 300)
+        ks = np.linspace(r_0[1], r_0[1], 300)
+        delta = [None]*len(ns)
+        i = 0 
+        for n in ns:
+            delta[i] = delta_phi([n, ks[i]], params_delta_function)
+            i = i + 1
+        plt.figure()
+        plt.plot(ns, delta, label="delta phi")
+        plt.plot(ns, np.unwrap(np.angle(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None))), label="Phase 0")
+        plt.plot(ns, np.unwrap(np.angle(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None)))-phase_approx[np.where(freq_ref==freq)], label="Phase 0 - phasemeas")
+        plt.plot(ns, phase_approx, label="Phase approx")
+        plt.title(str(r_0[0]))
+        plt.xlabel("n")
+        plt.ylabel("delta phi")
+        plt.legend()
+        plt.savefig("build/testing/Transfertest_Thz/delta/deltaphi_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
+        plt.close()
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
+    #delta_per_freq[index] = res.fun
 ##r_per_freq = reverse_array(r_per_freq) # we need to turn the array back around
 
 print("Done")
@@ -124,6 +154,19 @@ plt.ylabel('value')
 plt.title('noise std' + str(0.00001) +'parameter: epsilon ' + str(epsilon) + ', h \n' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
 plt.legend()
 plt.savefig('build/testing/test.pdf')
+
+plt.close()
+
+plt.figure()
+plt.plot(freq_ref/1e12, delta_per_freq, label='delta') # we have to flatten the array before it plots 
+
+#plt.plot(freq_ref[minlimit:maxlimit]/1e12, alpha, label=r'$\alpha$')
+
+plt.xlabel(r'$\omega / THz$')
+plt.ylabel('value')
+plt.title('noise std' + str(0.00001) +'parameter: epsilon ' + str(epsilon) + ', h \n' + str(h) + ', kicker n ' + str(kicker_n) + ', kicker k' + str(kicker_k) + ', start r ' + str(r_p))
+plt.legend()
+plt.savefig('build/testing/delta.pdf')
 
 plt.close()
 
