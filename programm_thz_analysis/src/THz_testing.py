@@ -87,7 +87,6 @@ plt.ylabel('phase')
 plt.savefig('build/testing/phase.pdf')
 plt.close()
 
-
 plt.figure()
 plt.plot(k_test, np.unwrap(np.angle(Transfer_function_three_slabs(freq_ref[10], n_test[10], k_test, Material, True) )), label='phase unwrapped')
 #plt.plot(freq_ref, np.angle(T), label='wrapped')
@@ -104,7 +103,7 @@ FP = False
 plotting = True
 for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range from upper to lower limit
     index = np.argwhere(freq_ref==freq)[0][0]
-    params_delta_function = [H_0_value[index], phase_approx[index], freq_ref, index,  Material, FP]
+    params_delta_function = [H_0_value[index], phase_approx, freq_ref, index,  Material, FP]
     res = minimize(delta_of_r_whole_frequency_range, r_0, args=params_delta_function, bounds=((1,None),(0, None)))
     r_0 = res.x
     if(np.mod(index, 100) == 0): 
@@ -122,18 +121,26 @@ for freq in tqdm(reverse_array(freq_ref[1:-1])): #walk through frequency range f
         delta = [None]*len(ns)
         i = 0 
         for n in ns:
-            delta[i] = delta_phi([n, ks[i]], params_delta_function)
+            delta[i] = delta_phi([n, ks[i]], params_delta_function)**2
             i = i + 1
         plt.figure()
-        plt.plot(ns, delta, label="delta phi")
+        plt.plot(ns, delta[0])
         plt.plot(ns, np.unwrap(np.angle(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None))), label="Phase 0")
-        plt.plot(ns, np.unwrap(np.angle(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None)))-phase_approx[np.where(freq_ref==freq)], label="Phase 0 - phasemeas")
+        plt.plot(ns, (np.unwrap(np.angle(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None)))-phase_approx[np.where(freq_ref==freq)])**2, label="Phase 0 - phasemeas")
         plt.plot(ns, phase_approx, label="Phase approx")
         plt.title(str(r_0[0]))
         plt.xlabel("n")
         plt.ylabel("delta phi")
         plt.legend()
         plt.savefig("build/testing/Transfertest_Thz/delta/deltaphi_for_n_at" + str(freq_ref[index]/10**12) + ".pdf")
+        plt.close()
+        plt.figure()
+        plt.plot(ns, np.abs(Transfer_function_three_slabs(freq, ns, ks[1], Material, FP=None)), label="Phase approx")
+        plt.title(str(r_0[0]))
+        plt.xlabel("n")
+        plt.ylabel("transferfunction absolut")
+        plt.legend()
+        plt.savefig("build/testing/Transfertest_Thz/delta/Transferfunction_against_n" + str(freq_ref[index]/10**12) + ".pdf")
         plt.close()
     r_per_freq[index] = [r_0[0], r_0[1]] # save the final result of the Newton method for the frequency freq
     #delta_per_freq[index] = res.fun

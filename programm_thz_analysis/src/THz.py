@@ -35,6 +35,16 @@ class Material_parameters:
         - Divide by FP
         - Measure over bigger intervall
 
+        
+    I know where the oscialltions come from:
+        The problem is that I do unwrapp the phase of T(omega, n, k) in frequency space, but I dont do it in n and k.
+        This means every time the angle jumps in from a changing n or k, that jump stay in the estimated phase.
+        Now I need to figure out how to elimate those phasejumps in the n and k space.
+
+        - First Idea:
+            Calculate the phase of T(omega) analytically instead of numerically. That way the function should be unwrapped and monotoneus.
+            Then use that function to define the delta function
+
     """
 
 
@@ -69,7 +79,7 @@ max_freq = 3*10**12
 FP = False # Choose if the FabryPerot factor is included in the Transmission function
             # usually for thin samples its better to divide the measured data by the FarbyPerot factor, so in general I never put FP on True
             # As the FP oscillates heavily depending on the probe thickness and that makes the estimation considerably less stable
-testing = True
+testing = False
 plotting = True # just for plots of measured data, the n k, epsilon and sigma plots will always be made
 comparison_parameter = False # if False no comparison data will be red in
 filter_0 = False
@@ -172,6 +182,49 @@ if(plotting):
     plot_complex_refrective_index(freq_ref, estimater_k(freq_ref, H_0_value, estimater_n(phase, freq_ref, Material), Material))
     plot_H_0_against_freq(freq_ref, np.abs(H_0_value))
     plot_Transferfunction(estimater_n(phase, freq_ref, Material), Transfer_function_three_slabs(freq_ref[100], estimater_n(phase, freq_ref, Material), 0.001, Material, FP=False))
+
+X = np.linspace(2.5,3.5, 400) #n
+Y = np.linspace(0, 0.1, 400) #k
+rho = np.zeros((400,400))
+phi = np.zeros((400,400))
+Z = np.zeros((400,400))
+i = 0
+j = 0
+for n in X:
+    for k in Y:
+        phi[j, i] = (np.angle(Transfer_function_three_slabs(freq_ref[100], n, k, Material, FP=False)))
+        rho[j, i] = np.log(np.abs(Transfer_function_three_slabs(freq_ref[100], n, k, Material, FP=False)))
+        j = j + 1
+    j = 0
+    i = i + 1
+Z = (rho)**2 + phi**2
+fig = plt.figure()
+ax = fig.add_subplot(projection="3d")
+surf = ax.plot_surface(Y, X, Z, vmin=Z.min(), cmap="magma")
+fig.colorbar(surf, shrink=0.5, aspect=5)
+plt.savefig("build/testing/3D_plot_lnabsT.pdf")
+plt.close()
+
+X = np.linspace(2.5,3.5, 400) #n
+Y = np.linspace(0, 0.1, 400) #k
+rho = np.zeros((400,400))
+phi = np.zeros((400,400))
+Z = np.zeros((400,400))
+i = 0
+j = 0
+for n in X:
+    for k in Y:
+        Z[i, j] = (np.angle(Transfer_function_three_slabs(freq_ref[100], n, k, Material, FP=False)))
+        j = j + 1
+    j = 0
+    i = i + 1
+fig = plt.figure()
+ax = fig.add_subplot(projection="3d")
+ax.view_init(elev=30, azim=65)
+surf = ax.plot_surface(Y, X, Z, vmin=Z.min(), cmap="magma")
+fig.colorbar(surf, shrink=0.5, aspect=5)
+plt.savefig("build/testing/3D_plot_argT.pdf")
+plt.close()
 
 ###################################################################################################################################
 # Here Starts the numerical process of finding the refractive index
@@ -287,7 +340,7 @@ if(Material.d >= 10**-3 or (filter_type=="truncate" and filter_0 == True)): # If
             delta = [None]*len(ns)
             i = 0
             for n in ns:
-                delta[i] = delta_phi([n, ks[i]], params_delta_function)
+                delta[i] = delta_phi([n, ks[500]], params_delta_function)
                 i = i + 1
             plt.figure()
             plt.plot(ns, delta, label="delta phi")
@@ -445,6 +498,7 @@ print("Done")
 #############################################################################################################################################################################################
 n = np.array(flatten(r_per_freq[minlimit:maxlimit])[0::2]) # first flatten the convoluted array than take every second entrance starting with the zeroth as those are n
 k = np.array(flatten(r_per_freq[minlimit:maxlimit])[1::2]) # first flatten the convoluted array than take every second entrance starting with the first as those are k
+
 
 
 print("Plotting...")

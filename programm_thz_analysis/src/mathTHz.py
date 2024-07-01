@@ -4,6 +4,9 @@ from scipy.signal import find_peaks
 from scipy.constants import c
 from scipy.optimize import curve_fit
 from plot import plot_phase_against_freq_debug
+import matplotlib.pyplot as plt
+
+
 def lin(A, B, x):
     return A*x+B
 
@@ -79,7 +82,7 @@ def difference_measured_calc(r, params): #shouldnt be used as this function is n
     return np.abs(H_0_calc[index]-H_0_measured) + np.abs(phase_calc[index] - phase_mes)
 
 def delta_of_r_whole_frequency_range(r, params):
-    return delta_phi(r, params)**2 + delta_rho(r, params)**2 # this should be minimized in the process or best even be zero 
+    return (delta_phi(r, params)**2 + delta_rho(r, params)**2) # this should be minimized in the process or best even be zero 
 
 def delta_phi(r, params):
     n = r[0]
@@ -90,13 +93,36 @@ def delta_phi(r, params):
     index = params[3]
     Material_parameter = params[4]
     FP = params[5]
-    H_0_calc = Transfer_function_three_slabs(freq, n, k, Material_parameter, FP)
-    angle_0 = np.angle(H_0_calc) #angle between complex numbers
-    phase_0 = np.unwrap(angle_0) #phase
+    #phase_0 = arg_Transferfunction(freq[index], n, Material_parameter)
+    #"""
+    #With this rather convoluted delta_phi function I am trying to fix the issue that the phase is not unwrapped in n and k space, just in freq space.
+    #"""
+    #NS = np.array([np.linspace(n-0.01, n+0.01, 3)]*3)
+    #KS = np.array([np.linspace(k-0.002, k+0.002, 3)]*3)
+    #Z = np.zeros((20, 20), dtype=complex)
+    #i = 0
+    #j = 0
+    #i_n = 0
+    #j_k = 0
+    #for n_ in NS:
+    #    for k_ in KS:
+    #        Z[i, j] = (Transfer_function_three_slabs(freq[index], n_, k_, Material_parameter, FP))
+    #        if(k_ == k):
+    #            j_k = j
+    #        j = j + 1
+    #    if(n_ == n):
+    #        i_n = i     
+    #    j = 0
+    #    i = i + 1
+    #phase_0 = np.unwrap(np.angle(Z))[i_n, j_k]
+    #H_0_calc = Transfer_function_three_slabs(freq[index], NS, KS, Material_parameter, FP)
+    #angle_0 = np.unwrap(np.angle(H_0_calc))[1,1] #angle between complex numbers
+    #phase_0 = np.unwrap(angle_0)[index] #phase
     #if(index < 50):
-    #    plot_phase_against_freq_debug(freq, angle_0, phase_0, index, n)
+    #    plot_phase_against_freq_debug(freq, angle_0, phase_0, index, n)#
     #phase_approx  = (linear_approx(freq, phase_0)[1] * freq)[index]
-    return (phase_0[index] - phase_mes)
+    angle_0 = Phase_Transferfunction(freq, n, k, Material_parameter)[index]
+    return (np.abs(angle_0) - np.abs(phase_mes))#[params[3]]
 
 def delta_rho(r, params):
     n = r[0]
@@ -120,6 +146,16 @@ def Transfer_function_three_slabs(omega, n_2_real, k_2, Material_parameter, FP):
         return T*FP
     else:
         return T
+    
+def Phase_Transferfunction(omega, n_2, k_2, Material_parameter, FP=False):
+    n_1 = Material_parameter.n_1
+    k_1 = Material_parameter.k_1
+    n_3 = Material_parameter.n_3
+    k_3 = Material_parameter.k_3
+    alpha = ((2*n_2*k_1 + 2*n_2*k_3) * (n_2**2 - k_2**2 + n_2*k_3 - k_2*k_3 + n_1*n_2 - k_1*k_2 + n_1*n_2 - k_1*k_3))
+    beta = ((2*n_1*n_2 + 2*n_2*n_3 - 2*k_1*k_3 - 2*k_2*k_3) * (2*n_2*k_2 + 2*n_2*k_3 + k_2*n_3 + k_1*n_2 + k_2*n_1 + k_1*n_3 + k_3*n_1))
+    gamma = ((n_2**2 - k_2**2 - k_2*k_3 + n_1*n_2 - k_1*k_2 + n_1*n_3 - k_1*k_3)**2 + (2*n_2*k_2 + n_2*k_3 + k_2*n_3 + k_1*n_2 + k_2*n_1 + k_1*n_3 + k_3*n_1)**2)
+    return ((alpha - beta)/gamma) *(n_3 - n_2) *2*np.pi* omega*Material_parameter.d/c
 
 def grad_T(omega, n_2_real, k_2, Material_parameter, FP):
     n_1 = Material_parameter.n_1 - 1j*Material_parameter.k_1

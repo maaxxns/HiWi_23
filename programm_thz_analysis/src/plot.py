@@ -280,3 +280,23 @@ def plot_Transferfunction(n, T):
     plt.title('T against n')
     plt.savefig('build/Transferfunctionagainstnm.pdf')
     plt.close() 
+
+#def plot_Transferfunction_against_n(r, T, params):
+#    n = r[0]
+#    k = r[1]
+#    H_0_measured = params[0]
+#    phase_mes = params[1]
+#    freq = params[2]
+#    index = params[3]
+#    Material_parameter = params[4]
+#    FP = params[5]
+#    ns = np.linspace(r[0]-2, r[0]+2, 300)
+#    ks = np.linspace(r[1], r[1], 300)
+#    plt.figure()
+#    plt.plot(ns, np.abs(Transfer_function_three_slabs(freq, ns, ks[1], Material_parameter, FP=None)), label="Phase approx")
+#    plt.title(str(r[0]))
+#    plt.xlabel("n")
+#    plt.ylabel("transferfunction absolut")
+#    plt.legend()
+#    plt.savefig("build/testing/Transfertest_Thz/delta/Transferfunction_against_n" + str(freq[index]/10**12) + ".pdf")
+#    plt.close()
